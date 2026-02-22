@@ -6,9 +6,6 @@ use App\Entity\News;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<News>
- */
 class NewsRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -16,28 +13,61 @@ class NewsRepository extends ServiceEntityRepository
         parent::__construct($registry, News::class);
     }
 
-//    /**
-//     * @return News[] Returns an array of News objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('n')
-//            ->andWhere('n.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('n.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    public function save(News $entity, bool $flush = false): void
+    {
+        $this->getEntityManager()->persist($entity);
 
-//    public function findOneBySomeField($value): ?News
-//    {
-//        return $this->createQueryBuilder('n')
-//            ->andWhere('n.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    public function remove(News $entity, bool $flush = false): void
+    {
+        $this->getEntityManager()->remove($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    public function search(array $filters, int $page, int $limit): array
+    {
+        $qb = $this->createQueryBuilder('n')
+            ->leftJoin('n.author', 'a')
+            ->addSelect('a');
+
+        if (!empty($filters['network'])) {
+            $qb->andWhere('n.network = :network')
+               ->setParameter('network', $filters['network']);
+        }
+
+        if (!empty($filters['line'])) {
+            $qb->andWhere('n.line = :line')
+               ->setParameter('line', $filters['line']);
+        }
+
+        if (!empty($filters['type'])) {
+            $qb->andWhere('n.type = :type')
+               ->setParameter('type', $filters['type']);
+        }
+
+        $qb->orderBy('n.publishedAt', 'DESC');
+
+        // Total avant pagination
+        $countQb = clone $qb;
+        $total = (int) $countQb
+            ->select('COUNT(n.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        // Pagination
+        $qb->setFirstResult(($page - 1) * $limit)
+           ->setMaxResults($limit);
+
+        return [
+            'items' => $qb->getQuery()->getResult(),
+            'total' => $total,
+        ];
+    }
 }

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>VeGlobs – Test API</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    button { padding: 10px 14px; margin-right: 10px; cursor: pointer; }
+    input { padding: 8px; width: 320px; }
+    pre { background: #f4f4f4; padding: 12px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>VeGlobs – Test API News</h1>
+
+  <p>
+    ⚠️ Pour que POST/PUT/DELETE marchent, tu dois être connecté en admin dans <code>/login</code>.
+  </p>
+
+  <div>
+    <button id="btnList">GET /api/news</button>
+    <button id="btnCreate">POST /api/news</button>
+  </div>
+
+  <hr>
+
+  <div>
+    <label>ID à modifier / supprimer :</label><br>
+    <input id="newsId" type="number" value="1" min="1">
+    <button id="btnUpdate">PUT /api/news/{id}</button>
+    <button id="btnDelete">DELETE /api/news/{id}</button>
+  </div>
+
+  <h3>Résultat</h3>
+  <pre id="output">Clique un bouton…</pre>
+
+  <script>
+    const out = document.getElementById('output');
+    const idInput = document.getElementById('newsId');
+
+    function show(data) {
+      out.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    }
+
+    async function call(method, url, body=null) {
+      const res = await fetch(url, {
+        method,
+        headers: body ? {'Content-Type': 'application/json'} : {},
+        body: body ? JSON.stringify(body) : null,
+        credentials: 'same-origin' // IMPORTANT: envoie la session (cookie) Symfony
+      });
+
+      const text = await res.text();
+      let json = null;
+      try { json = JSON.parse(text); } catch (e) {}
+
+      show({
+        status: res.status,
+        ok: res.ok,
+        body: json ?? text
+      });
+    }
+
+    document.getElementById('btnList').addEventListener('click', () => {
+      call('GET', '/api/news');
+    });
+
+  document.getElementById('btnCreate').addEventListener('click', () => {
+  call('POST', '/api/news', {
+    title: 'Hi',
+    content: 'Ok',
+    network: 'fake',
+    line: '',
+    type: 'wrong'
+  });
+});
+
+    document.getElementById('btnUpdate').addEventListener('click', () => {
+      const id = idInput.value;
+      call('PUT', `/api/news/${id}`, {
+        title: 'Titre modifié depuis /test-api'
+      });
+    });
+
+    document.getElementById('btnDelete').addEventListener('click', () => {
+      const id = idInput.value;
+      call('DELETE', `/api/news/${id}`);
+    });
+  </script>
+</body>
+</html>
