@@ -2,7 +2,10 @@
 
 namespace App\Entity;
 
+use App\Entity\Comment;
 use App\Repository\NewsRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -72,6 +75,16 @@ class News
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['news:read'])]
     private ?User $author = null;
+
+    // ✅ AJOUT : relation comments
+    #[ORM\OneToMany(mappedBy: 'news', targetEntity: Comment::class, orphanRemoval: true)]
+    #[Groups(['news:read'])]
+    private Collection $comments;
+
+    public function __construct()
+    {
+        $this->comments = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -152,6 +165,35 @@ class News
     public function setAuthor(?User $author): static
     {
         $this->author = $author;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Comment>
+     */
+    public function getComments(): Collection
+    {
+        return $this->comments;
+    }
+
+    public function addComment(Comment $comment): static
+    {
+        if (!$this->comments->contains($comment)) {
+            $this->comments->add($comment);
+            $comment->setNews($this);
+        }
+
+        return $this;
+    }
+
+    public function removeComment(Comment $comment): static
+    {
+        if ($this->comments->removeElement($comment)) {
+            if ($comment->getNews() === $this) {
+                $comment->setNews(null);
+            }
+        }
+
         return $this;
     }
 }

@@ -17,6 +17,7 @@
     ⚠️ Pour que POST/PUT/DELETE marchent, tu dois être connecté en admin dans <code>/login</code>.
   </p>
 
+  <!-- NEWS -->
   <div>
     <button id="btnList">GET /api/news</button>
     <button id="btnCreate">POST /api/news</button>
@@ -31,6 +32,22 @@
     <button id="btnDelete">DELETE /api/news/{id}</button>
   </div>
 
+  <hr>
+
+  <!-- COMMENTS -->
+  <h2>Comments</h2>
+
+  <label>ID News :</label><br>
+  <input type="number" id="newsIdComments" value="1" min="1" />
+  <button id="btnGetComments">GET /api/news/{id}/comments</button>
+  <button id="btnPostComment">POST /api/news/{id}/comments</button>
+
+  <br><br>
+
+  <label>ID Comment :</label><br>
+  <input type="number" id="commentId" value="1" min="1" />
+  <button id="btnDeleteComment">DELETE /api/comments/{id}</button>
+
   <h3>Résultat</h3>
   <pre id="output">Clique un bouton…</pre>
 
@@ -39,15 +56,17 @@
     const idInput = document.getElementById('newsId');
 
     function show(data) {
-      out.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+      out.textContent = typeof data === 'string'
+        ? data
+        : JSON.stringify(data, null, 2);
     }
 
-    async function call(method, url, body=null) {
+    async function call(method, url, body = null) {
       const res = await fetch(url, {
         method,
-        headers: body ? {'Content-Type': 'application/json'} : {},
+        headers: body ? { 'Content-Type': 'application/json' } : {},
         body: body ? JSON.stringify(body) : null,
-        credentials: 'same-origin' // IMPORTANT: envoie la session (cookie) Symfony
+        credentials: 'same-origin'
       });
 
       const text = await res.text();
@@ -61,19 +80,20 @@
       });
     }
 
+    // NEWS
     document.getElementById('btnList').addEventListener('click', () => {
       call('GET', '/api/news');
     });
 
-  document.getElementById('btnCreate').addEventListener('click', () => {
-  call('POST', '/api/news', {
-    title: 'Hi',
-    content: 'Ok',
-    network: 'fake',
-    line: '',
-    type: 'wrong'
-  });
-});
+    document.getElementById('btnCreate').addEventListener('click', () => {
+      call('POST', '/api/news', {
+        title: 'Hi',
+        content: 'Ok',
+        network: 'fake',
+        line: '',
+        type: 'wrong'
+      });
+    });
 
     document.getElementById('btnUpdate').addEventListener('click', () => {
       const id = idInput.value;
@@ -85,6 +105,24 @@
     document.getElementById('btnDelete').addEventListener('click', () => {
       const id = idInput.value;
       call('DELETE', `/api/news/${id}`);
+    });
+
+    // COMMENTS
+    document.getElementById('btnGetComments').addEventListener('click', () => {
+      const id = document.getElementById('newsIdComments').value;
+      call('GET', `/api/news/${id}/comments`);
+    });
+
+    document.getElementById('btnPostComment').addEventListener('click', () => {
+      const id = document.getElementById('newsIdComments').value;
+      const content = prompt('Contenu du commentaire :');
+      if (!content) return;
+      call('POST', `/api/news/${id}/comments`, { content });
+    });
+
+    document.getElementById('btnDeleteComment').addEventListener('click', () => {
+      const id = document.getElementById('commentId').value;
+      call('DELETE', `/api/comments/${id}`);
     });
   </script>
 </body>

@@ -1,12 +1,13 @@
 <?php
 
 namespace App\Entity;
-use Symfony\Component\Serializer\Annotation\Groups;
+
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -15,15 +16,16 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[UniqueEntity(fields: ['email'], message: 'There is already an account with this email')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
-#[ORM\Id]
-#[ORM\GeneratedValue]
-#[ORM\Column]
-#[Groups(['user:read'])]
-private ?int $id = null;
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    #[Groups(['user:read', 'comment:read', 'news:read'])]
+    private ?int $id = null;
 
-#[ORM\Column(length: 180, unique: true)]
-#[Groups(['user:read'])]
-private ?string $email = null;
+    #[ORM\Column(length: 180, unique: true)]
+    #[Groups(['user:read', 'comment:read', 'news:read'])]
+    private ?string $email = null;
+
     /**
      * @var list<string> The user roles
      */
@@ -42,9 +44,16 @@ private ?string $email = null;
     #[ORM\OneToMany(targetEntity: News::class, mappedBy: 'author')]
     private Collection $news;
 
+    /**
+     * @var Collection<int, Comment>
+     */
+    #[ORM\OneToMany(mappedBy: 'author', targetEntity: Comment::class, orphanRemoval: true)]
+    private Collection $comments;
+
     public function __construct()
     {
         $this->news = new ArrayCollection();
+        $this->comments = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -117,7 +126,7 @@ private ?string $email = null;
     public function __serialize(): array
     {
         $data = (array) $this;
-        $data["\0".self::class."\0password"] = hash('crc32c', $this->password);
+        $data["\0" . self::class . "\0password"] = hash('crc32c', $this->password);
 
         return $data;
     }
@@ -152,6 +161,35 @@ private ?string $email = null;
             // set the owning side to null (unless already changed)
             if ($news->getAuthor() === $this) {
                 $news->setAuthor(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Comment>
+     */
+    public function getComments(): Collection
+    {
+        return $this->comments;
+    }
+
+    public function addComment(Comment $comment): static
+    {
+        if (!$this->comments->contains($comment)) {
+            $this->comments->add($comment);
+            $comment->setAuthor($this);
+        }
+
+        return $this;
+    }
+
+    public function removeComment(Comment $comment): static
+    {
+        if ($this->comments->removeElement($comment)) {
+            if ($comment->getAuthor() === $this) {
+                $comment->setAuthor(null);
             }
         }
 
