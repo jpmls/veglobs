@@ -39,8 +39,7 @@ class CommentController extends AbstractController
         }
 
         $page = max(1, (int) $request->query->get('page', 1));
-        $limit = (int) $request->query->get('limit', 10);
-        $limit = min(max(1, $limit), 50);
+        $limit = min(max(1, (int) $request->query->get('limit', 10)), 50);
 
         $result = $commentRepository->findByNewsPaginated($id, $page, $limit);
 
@@ -68,6 +67,16 @@ class CommentController extends AbstractController
         ValidatorInterface $validator,
         SerializerInterface $serializer
     ): JsonResponse {
+        $user = $this->getUser();
+
+        if (!$user || !$user->isVerified()) {
+            return $this->json([
+                'errors' => [
+                    ['message' => 'You must verify your account before commenting.']
+                ]
+            ], Response::HTTP_FORBIDDEN);
+        }
+
         $news = $newsRepository->find($id);
         if (!$news) {
             return $this->json([
@@ -90,7 +99,7 @@ class CommentController extends AbstractController
         $comment->setContent((string) ($payload['content'] ?? ''));
         $comment->setCreatedAt(new \DateTimeImmutable());
         $comment->setNews($news);
-        $comment->setAuthor($this->getUser());
+        $comment->setAuthor($user);
 
         $errors = $validator->validate($comment);
         if (count($errors) > 0) {
@@ -129,6 +138,16 @@ class CommentController extends AbstractController
         ValidatorInterface $validator,
         SerializerInterface $serializer
     ): JsonResponse {
+        $user = $this->getUser();
+
+        if (!$user || !$user->isVerified()) {
+            return $this->json([
+                'errors' => [
+                    ['message' => 'You must verify your account before updating comments.']
+                ]
+            ], Response::HTTP_FORBIDDEN);
+        }
+
         $comment = $commentRepository->find($id);
         if (!$comment) {
             return $this->json([
@@ -184,6 +203,16 @@ class CommentController extends AbstractController
         CommentRepository $commentRepository,
         EntityManagerInterface $em
     ): JsonResponse {
+        $user = $this->getUser();
+
+        if (!$user || !$user->isVerified()) {
+            return $this->json([
+                'errors' => [
+                    ['message' => 'You must verify your account before deleting comments.']
+                ]
+            ], Response::HTTP_FORBIDDEN);
+        }
+
         $comment = $commentRepository->find($id);
         if (!$comment) {
             return $this->json([
