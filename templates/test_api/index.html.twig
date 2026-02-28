@@ -5,31 +5,35 @@
   <title>VeGlobs – Test API</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
-    button { padding: 10px 14px; margin-right: 10px; cursor: pointer; }
-    input { padding: 8px; width: 320px; }
+    button { padding: 10px 14px; margin: 6px 10px 6px 0; cursor: pointer; }
+    input { padding: 8px; width: 260px; margin: 4px 0; }
     pre { background: #f4f4f4; padding: 12px; border-radius: 6px; }
+    hr { margin: 18px 0; }
+    h2 { margin-bottom: 8px; }
+    label { display:block; margin-top: 8px; }
   </style>
 </head>
 <body>
-  <h1>VeGlobs – Test API News</h1>
+  <h1>VeGlobs – Test API</h1>
 
   <p>
-    ⚠️ Pour que POST/PUT/DELETE marchent, tu dois être connecté en admin dans <code>/login</code>.
+    ⚠️ Pour POST/PUT/DELETE, tu dois être connecté (<code>/login</code>) et selon l’endpoint, vérifié/admin.
   </p>
 
   <!-- NEWS -->
+  <h2>News</h2>
   <div>
     <button id="btnList">GET /api/news</button>
-    <button id="btnCreate">POST /api/news</button>
+    <button id="btnCreate">POST /api/news (admin)</button>
   </div>
 
-  <hr>
+  <label>ID News :</label>
+  <input id="newsId" type="number" value="1" min="1">
 
   <div>
-    <label>ID à modifier / supprimer :</label><br>
-    <input id="newsId" type="number" value="1" min="1">
-    <button id="btnUpdate">PUT /api/news/{id}</button>
-    <button id="btnDelete">DELETE /api/news/{id}</button>
+    <button id="btnGetOne">GET /api/news/{id}</button>
+    <button id="btnUpdate">PUT /api/news/{id} (admin)</button>
+    <button id="btnDelete">DELETE /api/news/{id} (admin)</button>
   </div>
 
   <hr>
@@ -37,34 +41,109 @@
   <!-- COMMENTS -->
   <h2>Comments</h2>
 
-  <label>ID News :</label><br>
+  <label>ID News (comments) :</label>
   <input type="number" id="newsIdComments" value="1" min="1" />
-  <button id="btnGetComments">GET /api/news/{id}/comments</button>
-  <button id="btnPostComment">POST /api/news/{id}/comments</button>
 
-  <br><br>
+  <div>
+    <button id="btnGetComments">GET /api/news/{id}/comments</button>
+    <button id="btnPostComment">POST /api/news/{id}/comments</button>
+  </div>
 
-  <label>ID Comment :</label><br>
+  <label>ID Comment :</label>
   <input type="number" id="commentId" value="1" min="1" />
-  <button id="btnDeleteComment">DELETE /api/comments/{id}</button>
+
+  <div>
+    <button id="btnUpdateComment">PUT /api/comments/{id}</button>
+    <button id="btnDeleteComment">DELETE /api/comments/{id}</button>
+  </div>
+
+  <hr>
+
+  <!-- NOTIFICATIONS -->
+  <h2>Notifications</h2>
+
+  <div>
+    <button id="btnGetNotifs">GET /api/me/notifications</button>
+  </div>
+
+  <label>ID Notification :</label>
+  <input type="number" id="notifId" value="1" min="1" />
+
+  <div>
+    <button id="btnReadNotif">POST /api/me/notifications/{id}/read</button>
+  </div>
+
+  <hr>
+
+  <!-- FOLLOWS -->
+  <h2>Follows</h2>
+
+  <label>Network :</label>
+  <input type="text" id="followNetwork" value="metro">
+
+  <label>Line :</label>
+  <input type="text" id="followLine" value="14">
+
+  <div>
+    <button id="btnCreateFollow">POST /api/me/follows</button>
+    <button id="btnGetFollows">GET /api/me/follows</button>
+  </div>
+
+  <label>ID Follow :</label>
+  <input type="number" id="followId" value="1" min="1">
+
+  <div>
+    <button id="btnDeleteFollow">DELETE /api/me/follows/{id}</button>
+  </div>
+
+  <hr>
+
+  <!-- TRIP HISTORY -->
+  <h2>Trip History</h2>
+
+  <label>From station :</label>
+  <input type="text" id="tripFrom" value="Châtelet">
+
+  <label>To station :</label>
+  <input type="text" id="tripTo" value="Bastille">
+
+  <label>Network :</label>
+  <input type="text" id="tripNetwork" value="metro">
+
+  <label>Line :</label>
+  <input type="text" id="tripLine" value="1">
+
+  <div>
+    <button id="btnCreateTrip">POST /api/me/trips</button>
+    <button id="btnGetTrips">GET /api/me/trips</button>
+  </div>
+
+  <label>ID Trip :</label>
+  <input type="number" id="tripId" value="1" min="1">
+
+  <div>
+    <button id="btnDeleteTrip">DELETE /api/me/trips/{id}</button>
+  </div>
+
+  <hr>
 
   <h3>Résultat</h3>
   <pre id="output">Clique un bouton…</pre>
 
   <script>
     const out = document.getElementById('output');
-    const idInput = document.getElementById('newsId');
 
     function show(data) {
-      out.textContent = typeof data === 'string'
-        ? data
-        : JSON.stringify(data, null, 2);
+      out.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
     }
 
-    async function call(method, url, body = null) {
+    async function call(method, url, body=null) {
       const res = await fetch(url, {
         method,
-        headers: body ? { 'Content-Type': 'application/json' } : {},
+        headers: {
+          'Accept': 'application/json',
+          ...(body ? {'Content-Type': 'application/json'} : {})
+        },
         body: body ? JSON.stringify(body) : null,
         credentials: 'same-origin'
       });
@@ -80,34 +159,41 @@
       });
     }
 
+    // ----------------------
     // NEWS
+    // ----------------------
     document.getElementById('btnList').addEventListener('click', () => {
       call('GET', '/api/news');
     });
 
     document.getElementById('btnCreate').addEventListener('click', () => {
       call('POST', '/api/news', {
-        title: 'Hi',
-        content: 'Ok',
-        network: 'fake',
-        line: '',
-        type: 'wrong'
+        title: 'News depuis /test-api',
+        content: 'Contenu test',
+        network: 'ratp',
+        line: '1',
+        type: 'info'
       });
+    });
+
+    document.getElementById('btnGetOne').addEventListener('click', () => {
+      const id = document.getElementById('newsId').value;
+      call('GET', `/api/news/${id}`);
     });
 
     document.getElementById('btnUpdate').addEventListener('click', () => {
-      const id = idInput.value;
-      call('PUT', `/api/news/${id}`, {
-        title: 'Titre modifié depuis /test-api'
-      });
+      const id = document.getElementById('newsId').value;
+      call('PUT', `/api/news/${id}`, { title: 'Titre modifié depuis /test-api' });
     });
 
     document.getElementById('btnDelete').addEventListener('click', () => {
-      const id = idInput.value;
+      const id = document.getElementById('newsId').value;
       call('DELETE', `/api/news/${id}`);
     });
 
+    // ----------------------
     // COMMENTS
+    // ----------------------
     document.getElementById('btnGetComments').addEventListener('click', () => {
       const id = document.getElementById('newsIdComments').value;
       call('GET', `/api/news/${id}/comments`);
@@ -115,14 +201,72 @@
 
     document.getElementById('btnPostComment').addEventListener('click', () => {
       const id = document.getElementById('newsIdComments').value;
-      const content = prompt('Contenu du commentaire :');
+      const content = prompt("Contenu du commentaire :");
       if (!content) return;
       call('POST', `/api/news/${id}/comments`, { content });
+    });
+
+    document.getElementById('btnUpdateComment').addEventListener('click', () => {
+      const id = document.getElementById('commentId').value;
+      const content = prompt("Nouveau contenu :");
+      if (!content) return;
+      call('PUT', `/api/comments/${id}`, { content });
     });
 
     document.getElementById('btnDeleteComment').addEventListener('click', () => {
       const id = document.getElementById('commentId').value;
       call('DELETE', `/api/comments/${id}`);
+    });
+
+    // ----------------------
+    // NOTIFICATIONS
+    // ----------------------
+    document.getElementById('btnGetNotifs').addEventListener('click', () => {
+      call('GET', '/api/me/notifications');
+    });
+
+    document.getElementById('btnReadNotif').addEventListener('click', () => {
+      const id = document.getElementById('notifId').value;
+      call('POST', `/api/me/notifications/${id}/read`);
+    });
+
+    // ----------------------
+    // FOLLOWS
+    // ----------------------
+    document.getElementById('btnCreateFollow').addEventListener('click', () => {
+      const network = document.getElementById('followNetwork').value;
+      const line = document.getElementById('followLine').value;
+      call('POST', '/api/me/follows', { network, line });
+    });
+
+    document.getElementById('btnGetFollows').addEventListener('click', () => {
+      call('GET', '/api/me/follows?page=1&limit=10');
+    });
+
+    document.getElementById('btnDeleteFollow').addEventListener('click', () => {
+      const id = document.getElementById('followId').value;
+      call('DELETE', `/api/me/follows/${id}`);
+    });
+
+    // ----------------------
+    // TRIP HISTORY
+    // ----------------------
+    document.getElementById('btnCreateTrip').addEventListener('click', () => {
+      const fromStation = document.getElementById('tripFrom').value;
+      const toStation = document.getElementById('tripTo').value;
+      const network = document.getElementById('tripNetwork').value;
+      const line = document.getElementById('tripLine').value;
+
+      call('POST', '/api/me/trips', { fromStation, toStation, network, line });
+    });
+
+    document.getElementById('btnGetTrips').addEventListener('click', () => {
+      call('GET', '/api/me/trips?page=1&limit=10');
+    });
+
+    document.getElementById('btnDeleteTrip').addEventListener('click', () => {
+      const id = document.getElementById('tripId').value;
+      call('DELETE', `/api/me/trips/${id}`);
     });
   </script>
 </body>
