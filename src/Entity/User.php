@@ -2,6 +2,10 @@
 
 namespace App\Entity;
 
+use App\Entity\Comment;
+use App\Entity\Follow;
+use App\Entity\News;
+use App\Entity\Trip;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -48,6 +52,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:me', 'user:read'])]
     private \DateTimeImmutable $createdAt;
 
+    #[ORM\OneToMany(mappedBy: 'author', targetEntity: News::class, orphanRemoval: true)]
+    private Collection $news;
+
+    #[ORM\OneToMany(mappedBy: 'author', targetEntity: Comment::class, orphanRemoval: true)]
+    private Collection $comments;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Follow::class, orphanRemoval: true)]
+    private Collection $follows;
+
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Trip::class, orphanRemoval: true)]
     private Collection $trips;
 
@@ -55,6 +68,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->roles = ['ROLE_USER'];
         $this->createdAt = new \DateTimeImmutable();
+        $this->news = new ArrayCollection();
+        $this->comments = new ArrayCollection();
+        $this->follows = new ArrayCollection();
         $this->trips = new ArrayCollection();
     }
 
@@ -71,7 +87,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEmail(string $email): self
     {
         $this->email = $email;
-
         return $this;
     }
 
@@ -91,7 +106,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setRoles(array $roles): self
     {
         $this->roles = array_values(array_unique($roles));
-
         return $this;
     }
 
@@ -103,7 +117,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPassword(string $password): self
     {
         $this->password = $password;
-
         return $this;
     }
 
@@ -119,7 +132,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setFirstName(?string $firstName): self
     {
         $this->firstName = $firstName;
-
         return $this;
     }
 
@@ -131,7 +143,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setLastName(?string $lastName): self
     {
         $this->lastName = $lastName;
-
         return $this;
     }
 
@@ -143,7 +154,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setBirthDate(?\DateTimeImmutable $birthDate): self
     {
         $this->birthDate = $birthDate;
-
         return $this;
     }
 
@@ -155,13 +165,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setIsVerified(bool $isVerified): self
     {
         $this->isVerified = $isVerified;
-
         return $this;
     }
 
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    /**
+     * @return Collection<int, News>
+     */
+    public function getNews(): Collection
+    {
+        return $this->news;
+    }
+
+    /**
+     * @return Collection<int, Comment>
+     */
+    public function getComments(): Collection
+    {
+        return $this->comments;
+    }
+
+    /**
+     * @return Collection<int, Follow>
+     */
+    public function getFollows(): Collection
+    {
+        return $this->follows;
     }
 
     /**
