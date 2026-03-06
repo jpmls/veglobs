@@ -8,7 +8,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Core\Annotation\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class NewsController extends AbstractController
@@ -21,9 +20,12 @@ class NewsController extends AbstractController
 
         if ($limit < 1 || $limit > 100) {
             return $this->json([
-                'error' => [
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => ['limit' => ['Must be between 1 and 100']],
+                'message' => 'Validation failed',
+                'errors' => [
+                    [
+                        'field' => 'limit',
+                        'message' => 'Must be between 1 and 100',
+                    ],
                 ],
             ], 422);
         }
@@ -39,20 +41,15 @@ class NewsController extends AbstractController
         $total = $result['total'];
         $pages = (int) max(1, ceil($total / $limit));
 
-        return $this->json(
-            [
-                'meta' => [
-                    'page' => $page,
-                    'limit' => $limit,
-                    'total' => $total,
-                    'pages' => $pages,
-                ],
-                'data' => $result['items'],
+        return $this->json([
+            'meta' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'pages' => $pages,
             ],
-            200,
-            [],
-            ['groups' => ['news:read', 'user:read']]
-        );
+            'data' => $result['items'],
+        ], 200, [], ['groups' => ['news:read', 'user:read']]);
     }
 
     #[Route('/api/news/{id}', name: 'api_news_detail', methods: ['GET'])]
@@ -61,34 +58,38 @@ class NewsController extends AbstractController
         $news = $newsRepository->find($id);
 
         if (!$news) {
-            return $this->json(['error' => ['code' => 'NOT_FOUND', 'message' => 'News not found']], 404);
+            return $this->json([
+                'message' => 'News not found',
+            ], 404);
         }
 
         return $this->json($news, 200, [], ['groups' => ['news:read', 'user:read']]);
     }
 
-    #[IsGranted('ROLE_ADMIN')]
     #[Route('/api/news', name: 'api_news_create', methods: ['POST'])]
-    public function create(Request $request, NewsRepository $newsRepository, ValidatorInterface $validator): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
-        if (!is_array($data)) {
-            return $this->json(['error' => ['code' => 'BAD_JSON', 'message' => 'Invalid JSON body']], 400);
+    public function create(
+        Request $request,
+        NewsRepository $newsRepository,
+        ValidatorInterface $validator
+    ): JsonResponse {
+        $this->denyAccessUnlessGranted('ROLE_REDACTOR');
+
+        $data = $this->decodeJsonObject($request);
+        if ($data instanceof JsonResponse) {
+            return $data;
         }
 
         $news = new News();
-        if (array_key_exists('title', $data)) $news->setTitle((string) $data['title']);
-        if (array_key_exists('content', $data)) $news->setContent((string) $data['content']);
-        if (array_key_exists('network', $data)) $news->setNetwork((string) $data['network']);
-        if (array_key_exists('line', $data)) $news->setLine((string) $data['line']);
-        if (array_key_exists('type', $data)) $news->setType((string) $data['type']);
-
+        $this->hydrateNews($news, $data);
         $news->setPublishedAt(new \DateTimeImmutable());
 
         $user = $this->getUser();
         if (!$user) {
-            return $this->json(['error' => ['code' => 'UNAUTHORIZED', 'message' => 'You must be logged in']], 401);
+            return $this->json([
+                'message' => 'You must be logged in',
+            ], 401);
         }
+
         $news->setAuthor($user);
 
         $errors = $validator->validate($news);
@@ -101,25 +102,28 @@ class NewsController extends AbstractController
         return $this->json($news, 201, [], ['groups' => ['news:read', 'user:read']]);
     }
 
-    #[IsGranted('ROLE_ADMIN')]
     #[Route('/api/news/{id}', name: 'api_news_edit', methods: ['PUT'])]
-    public function edit(int $id, Request $request, NewsRepository $newsRepository, ValidatorInterface $validator): JsonResponse
-    {
+    public function edit(
+        int $id,
+        Request $request,
+        NewsRepository $newsRepository,
+        ValidatorInterface $validator
+    ): JsonResponse {
+        $this->denyAccessUnlessGranted('ROLE_REDACTOR');
+
         $news = $newsRepository->find($id);
         if (!$news) {
-            return $this->json(['error' => ['code' => 'NOT_FOUND', 'message' => 'News not found']], 404);
+            return $this->json([
+                'message' => 'News not found',
+            ], 404);
         }
 
-        $data = json_decode($request->getContent(), true);
-        if (!is_array($data)) {
-            return $this->json(['error' => ['code' => 'BAD_JSON', 'message' => 'Invalid JSON body']], 400);
+        $data = $this->decodeJsonObject($request);
+        if ($data instanceof JsonResponse) {
+            return $data;
         }
 
-        if (array_key_exists('title', $data)) $news->setTitle((string) $data['title']);
-        if (array_key_exists('content', $data)) $news->setContent((string) $data['content']);
-        if (array_key_exists('network', $data)) $news->setNetwork((string) $data['network']);
-        if (array_key_exists('line', $data)) $news->setLine((string) $data['line']);
-        if (array_key_exists('type', $data)) $news->setType((string) $data['type']);
+        $this->hydrateNews($news, $data);
 
         $errors = $validator->validate($news);
         if (count($errors) > 0) {
@@ -131,32 +135,93 @@ class NewsController extends AbstractController
         return $this->json($news, 200, [], ['groups' => ['news:read', 'user:read']]);
     }
 
-    #[IsGranted('ROLE_ADMIN')]
     #[Route('/api/news/{id}', name: 'api_news_delete', methods: ['DELETE'])]
     public function delete(int $id, NewsRepository $newsRepository): JsonResponse
     {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
         $news = $newsRepository->find($id);
         if (!$news) {
-            return $this->json(['error' => ['code' => 'NOT_FOUND', 'message' => 'News not found']], 404);
+            return $this->json([
+                'message' => 'News not found',
+            ], 404);
         }
 
         $newsRepository->remove($news, true);
 
-        return $this->json(['message' => 'News deleted successfully'], 200);
+        return $this->json([
+            'message' => 'News deleted successfully',
+        ], 200);
+    }
+
+    /**
+     * @return array<string, mixed>|JsonResponse
+     */
+    private function decodeJsonObject(Request $request): array|JsonResponse
+    {
+        $raw = $request->getContent();
+
+        if ($raw === '' || $raw === null) {
+            return [];
+        }
+
+        try {
+            $decoded = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\Throwable) {
+            return $this->json([
+                'message' => 'Invalid JSON',
+            ], 400);
+        }
+
+        if (!is_array($decoded)) {
+            return $this->json([
+                'message' => 'Invalid JSON body',
+            ], 400);
+        }
+
+        return $decoded;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function hydrateNews(News $news, array $data): void
+    {
+        if (array_key_exists('title', $data)) {
+            $news->setTitle((string) $data['title']);
+        }
+
+        if (array_key_exists('content', $data)) {
+            $news->setContent((string) $data['content']);
+        }
+
+        if (array_key_exists('network', $data)) {
+            $news->setNetwork((string) $data['network']);
+        }
+
+        if (array_key_exists('line', $data)) {
+            $news->setLine((string) $data['line']);
+        }
+
+        if (array_key_exists('type', $data)) {
+            $news->setType((string) $data['type']);
+        }
     }
 
     private function validationErrorResponse(iterable $errors): JsonResponse
     {
-        $details = [];
+        $formatted = [];
+
         foreach ($errors as $error) {
-            $details[$error->getPropertyPath()][] = $error->getMessage();
+            $formatted[] = [
+                'field' => (string) $error->getPropertyPath(),
+                'message' => (string) $error->getMessage(),
+            ];
         }
 
         return $this->json([
-            'error' => [
-                'code' => 'VALIDATION_ERROR',
-                'details' => $details,
-            ],
+            'message' => 'Validation failed',
+            'errors' => $formatted,
         ], 422);
     }
 }

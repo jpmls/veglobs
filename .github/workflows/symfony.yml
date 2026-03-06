@@ -1,0 +1,30 @@
+name: Symfony CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_mysql
+
+      - name: Install dependencies
+        run: composer install --no-progress
+
+      - name: Symfony container check
+        run: php bin/console lint:container
+
+      - name: Doctrine schema validation
+        run: php bin/console doctrine:schema:validate
