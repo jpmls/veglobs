@@ -1,0 +1,35 @@
+<?php
+
+namespace App\Controller\Api;
+
+use App\Repository\Transport\BikeStationRepository;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Routing\Annotation\Route;
+
+class BikeStationController extends AbstractController
+{
+    #[Route('/api/bikes/stations', name: 'api_bike_stations', methods: ['GET'])]
+    public function index(BikeStationRepository $bikeStationRepository): JsonResponse
+    {
+        $stations = $bikeStationRepository->findAll();
+
+        $data = [];
+
+        foreach ($stations as $station) {
+            $data[] = [
+                'id' => $station->getId(),
+                'name' => $station->getName(),
+                'lat' => $station->getLat(),
+                'lon' => $station->getLon(),
+                'availableBikes' => $station->getAvailableBikes(),
+                'availableStands' => $station->getAvailableBikeStands(),
+            ];
+        }
+
+        return $this->json([
+            'count' => count($data),
+            'data' => $data,
+        ]);
+    }
+}

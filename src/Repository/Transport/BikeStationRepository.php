@@ -13,14 +13,13 @@ class BikeStationRepository extends ServiceEntityRepository
         parent::__construct($registry, BikeStation::class);
     }
 
-    /**
-     * @return BikeStation[]
-     */
-    public function findAvailable(int $limit = 200): array
+    public function findAvailable(int $limit = 300): array
     {
         return $this->createQueryBuilder('b')
             ->andWhere('b.status = :status')
+            ->andWhere('b.contractName = :city')
             ->setParameter('status', 'OPEN')
+            ->setParameter('city', 'Paris')
             ->orderBy('b.availableBikes', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
