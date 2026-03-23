@@ -1,0 +1,154 @@
+.back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    color: #111827;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.news-card {
+    background: white;
+    padding: 30px;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.news-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.news-type {
+    font-weight: 700;
+}
+
+.news-meta {
+    display: block;
+    margin-bottom: 20px;
+    color: #6b7280;
+}
+
+.news-content {
+    line-height: 1.7;
+    margin-bottom: 25px;
+}
+
+.separator {
+    margin: 25px 0;
+    border: none;
+    border-top: 1px solid #e5e7eb;
+}
+
+.comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 30px;
+}
+
+.comment-item {
+    padding: 15px;
+    border-radius: 10px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: fadeInUp 0.35s ease forwards;
+}
+
+.comment-empty {
+    color: #6b7280;
+}
+
+.comment-form-wrapper {
+    margin-top: 20px;
+}
+
+.comment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.comment-textarea {
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    min-height: 100px;
+    resize: vertical;
+    font: inherit;
+}
+
+.comment-submit,
+.btn-login-comment {
+    display: inline-block;
+    padding: 10px 16px;
+    background: #4bc0ad;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.comment-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.comment-message {
+    margin-bottom: 10px;
+    min-height: 20px;
+}
+
+.comment-message.error {
+    color: #b91c1c;
+}
+
+.comment-message.success {
+    color: #15803d;
+}
+
+.comment-login-box {
+    margin-top: 20px;
+}
+
+.news-loading {
+    text-align: center;
+}
+
+.loader {
+    width: 34px;
+    height: 34px;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #4bc0ad;
+    border-radius: 50%;
+    margin: 0 auto 14px;
+    animation: spin 0.8s linear infinite;
+}
+
+.news-error {
+    color: #b91c1c;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -3,10 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\CommentRepository;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Serializer\Annotation\Groups;
-use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: CommentRepository::class)]
 class Comment
@@ -14,27 +12,30 @@ class Comment
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['comment:read', 'news:read'])]
+    #[Groups(['news:read'])]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['comment:read', 'news:read'])]
-    #[Assert\NotBlank(message: 'Comment content is required')]
-    #[Assert\Length(min: 2, minMessage: 'Comment too short (min 2 chars)')]
+    #[ORM\Column(type: 'text')]
+    #[Groups(['news:read'])]
     private ?string $content = null;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    #[Groups(['comment:read', 'news:read'])]
+    #[ORM\Column]
+    #[Groups(['news:read'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'comments')]
     #[ORM\JoinColumn(nullable: false)]
     private ?News $news = null;
 
-    #[ORM\ManyToOne(inversedBy: 'comments')]
+    #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['comment:read', 'news:read'])]
+    #[Groups(['news:read'])]
     private ?User $author = null;
+
+    public function __construct()
+    {
+        $this->createdAt = new \DateTimeImmutable();
+    }
 
     public function getId(): ?int
     {

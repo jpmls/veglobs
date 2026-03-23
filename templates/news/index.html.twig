@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Actualités Transport - VeGlobs{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/news.css') }}">
+{% endblock %}
+
+{% block body %}
+<div class="news-page">
+    <div class="news-topbar">
+        <div class="news-title-block">
+            <h1>Actualités Transport</h1>
+            <p>Les dernières infos du réseau.</p>
+        </div>
+
+        <div class="news-filters">
+            <input
+                type="text"
+                id="searchInput"
+                class="news-search"
+                placeholder="Rechercher..."
+            >
+
+            <select id="lineFilter" class="news-select">
+                <option value="">Toutes les lignes</option>
+            </select>
+
+            <select id="typeFilter" class="news-select">
+                <option value="">Tous types</option>
+                <option value="official">Official</option>
+                <option value="community">Community</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="news-list" class="news-list">
+        <div class="news-card">Chargement...</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('js/news.js') }}"></script>
+{% endblock %}

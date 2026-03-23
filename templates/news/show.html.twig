@@ -1,0 +1,31 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détail News - VeGlobs{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/news-detail.css') }}">
+{% endblock %}
+
+{% block body %}
+<div class="page" style="padding:120px 20px; max-width:900px; margin:auto;">
+    <a href="/news" class="back-link">← Retour aux news</a>
+
+    <div
+        id="news-detail"
+        data-news-id="{{ newsId }}"
+        data-is-authenticated="{{ app.user ? 'true' : 'false' }}"
+        data-login-url="{{ path('app_login') }}"
+    >
+        <div class="news-card news-loading">
+            <div class="loader"></div>
+            <p>Chargement de la news...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('js/news-detail.js') }}"></script>
+{% endblock %}

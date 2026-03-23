@@ -11,7 +11,15 @@ class PlaceholderController extends AbstractController
     #[Route('/news', name: 'app_news')]
     public function news(): Response
     {
-        return new Response('Page News à venir');
+        return $this->render('news/index.html.twig');
+    }
+
+    #[Route('/news/{id}', name: 'app_news_show')]
+    public function newsShow(int $id): Response
+    {
+        return $this->render('news/show.html.twig', [
+            'newsId' => $id
+        ]);
     }
 
     #[Route('/journey', name: 'app_journey')]
@@ -27,10 +35,10 @@ class PlaceholderController extends AbstractController
     }
 
     #[Route('/velib', name: 'app_velib')]
-public function velib(): Response
-{
-    return $this->render('velib/index.html.twig');
-}
+    public function velib(): Response
+    {
+        return $this->render('velib/index.html.twig');
+    }
 
     #[Route('/login', name: 'app_login')]
     public function login(): Response
