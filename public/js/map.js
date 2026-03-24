@@ -1,178 +1,226 @@
-// =====================
-// PROJECTIONS
-// =====================
+const map = L.map('map').setView([48.8566, 2.3522], 10);
 
-proj4.defs(
-    "EPSG:2154",
-    "+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 " +
-    "+lon_0=3 +x_0=700000 +y_0=6600000 " +
-    "+ellps=GRS80 +units=m +no_defs"
-);
-
-const WGS84 = "EPSG:4326";
-
-// =====================
-// INIT MAP
-// =====================
-
-const map = L.map('map').setView([48.8566, 2.3522], 12);
+map.setMinZoom(9);
+map.setMaxZoom(18);
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap & CartoDB'
 }).addTo(map);
 
-// =====================
-// VARIABLES
-// =====================
+const startInput = document.getElementById('start-input');
+const endInput = document.getElementById('end-input');
+const resetBtn = document.getElementById('reset-btn');
 
-let stops = [];
-let startPoint = null;
-let endPoint = null;
-
+let startStop = null;
+let endStop = null;
 let startMarker = null;
 let endMarker = null;
+let routeLine = null;
 
-// =====================
-// CUSTOM MARKER
-// =====================
+const markers = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    spiderfyOnMaxZoom: true,
+    maxClusterRadius: 40
+});
 
-function getMarkerIcon(color) {
-    return L.divIcon({
-        className: '',
-        html: `<div style="
-            width:16px;
-            height:16px;
-            background:${color};
-            border-radius:50%;
-            border:2px solid white;
-            box-shadow:0 0 6px rgba(0,0,0,0.3);
-        "></div>`
+fetch('/api/stops')
+    .then(response => response.json())
+    .then(stops => {
+        if (!Array.isArray(stops)) {
+            console.error('Format API invalide :', stops);
+            return;
+        }
+
+        stops.forEach(stop => {
+            if (typeof stop.lat !== 'number' || typeof stop.lng !== 'number') {
+                return;
+            }
+
+            const coords = [stop.lat, stop.lng];
+
+            const marker = L.circleMarker(coords, {
+                radius: 5,
+                color: '#2563eb',
+                fillColor: '#2563eb',
+                fillOpacity: 1,
+                weight: 1
+            });
+
+            marker.bindPopup(`
+                <strong>${escapeHtml(stop.name)}</strong><br>
+                <span>Clique pour sélectionner</span>
+            `);
+
+            marker.on('click', () => selectStop(stop, coords));
+
+            markers.addLayer(marker);
+        });
+
+        map.addLayer(markers);
+    })
+    .catch(error => {
+        console.error('Erreur chargement des arrêts :', error);
     });
-}
 
-// =====================
-// CONVERSION GPS (CORRECTE)
-// =====================
+function selectStop(stop, coords) {
+    if (!startStop) {
+        startStop = {
+            ...stop,
+            lat: coords[0],
+            lng: coords[1]
+        };
 
-function convertToLatLng(x, y) {
-    const [lng, lat] = proj4("EPSG:2154", WGS84, [x, y]);
-    return [lat, lng];
-}
+        startInput.value = stop.name;
 
-// =====================
-// FETCH STOPS
-// =====================
+        if (startMarker) {
+            map.removeLayer(startMarker);
+        }
 
-async function loadStops() {
-    try {
-        const response = await fetch('/api/stops');
-        const data = await response.json();
+        startMarker = L.circleMarker(coords, {
+            radius: 8,
+            color: '#16a34a',
+            fillColor: '#16a34a',
+            fillOpacity: 1,
+            weight: 2
+        }).addTo(map);
 
-        stops = data;
-        displayStops();
-    } catch (error) {
-        console.error(error);
+        return;
     }
+
+    if (!endStop) {
+        endStop = {
+            ...stop,
+            lat: coords[0],
+            lng: coords[1]
+        };
+
+        endInput.value = stop.name;
+
+        if (endMarker) {
+            map.removeLayer(endMarker);
+        }
+
+        endMarker = L.circleMarker(coords, {
+            radius: 8,
+            color: '#dc2626',
+            fillColor: '#dc2626',
+            fillOpacity: 1,
+            weight: 2
+        }).addTo(map);
+
+        loadRoute();
+
+        return;
+    }
+
+    resetSelection();
+
+    startStop = {
+        ...stop,
+        lat: coords[0],
+        lng: coords[1]
+    };
+
+    startInput.value = stop.name;
+
+    startMarker = L.circleMarker(coords, {
+        radius: 8,
+        color: '#16a34a',
+        fillColor: '#16a34a',
+        fillOpacity: 1,
+        weight: 2
+    }).addTo(map);
 }
 
-function drawLine() {
+function loadRoute() {
+    if (!startStop || !endStop) {
+        return;
+    }
 
-    if (!startPoint || !endPoint) return;
+    if (!startStop.id || !endStop.id) {
+        console.error('Les stations n’ont pas d’id :', startStop, endStop);
+        return;
+    }
 
-    const startCoords = convertToLatLng(
-        startPoint.x_epsg2154,
-        startPoint.y_epsg2154
-    );
+    fetch(`/api/route?from=${encodeURIComponent(startStop.id)}&to=${encodeURIComponent(endStop.id)}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Route:', data);
 
-    const endCoords = convertToLatLng(
-        endPoint.x_epsg2154,
-        endPoint.y_epsg2154
-    );
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
 
-    // Supprimer ancienne ligne
+            if (!Array.isArray(data) || data.length === 0) {
+                alert('Aucun trajet trouvé');
+                return;
+            }
+
+            drawRouteLine(data);
+        })
+        .catch(error => {
+            console.error('Erreur chargement trajet :', error);
+        });
+}
+
+function drawRouteLine(routeStops) {
     if (routeLine) {
         map.removeLayer(routeLine);
     }
 
-    routeLine = L.polyline([startCoords, endCoords], {
-        color: '#007bff',
-        weight: 5,
-        opacity: 0.8
+    const latlngs = routeStops
+        .filter(stop => typeof stop.lat === 'number' && typeof stop.lng === 'number')
+        .map(stop => [stop.lat, stop.lng]);
+
+    if (latlngs.length < 2) {
+        console.error('Pas assez de points pour tracer le trajet :', routeStops);
+        return;
+    }
+
+    routeLine = L.polyline(latlngs, {
+        color: '#1d4ed8',
+        weight: 4,
+        opacity: 0.9
     }).addTo(map);
 
-    // zoom automatique
-    map.fitBounds(routeLine.getBounds());
-}
-
-// =====================
-// DISPLAY STOPS
-// =====================
-
-function displayStops() {
-    stops.forEach(stop => {
-
-        const coords = convertToLatLng(stop.x_epsg2154, stop.y_epsg2154);
-
-        const marker = L.marker(coords, {
-            icon: getMarkerIcon('#666')
-        }).addTo(map);
-
-        marker.bindPopup(stop.name);
-
-        marker.on('click', () => handleStopClick(stop, coords));
+    map.fitBounds(routeLine.getBounds(), {
+        padding: [40, 40]
     });
 }
 
-// =====================
-// CLICK HANDLER
-// =====================
-
-function handleStopClick(stop, coords) {
-
-    if (startPoint && endPoint) {
-        resetSelection();
-    }
-
-    if (!startPoint) {
-        startPoint = stop;
-        document.getElementById('start-input').value = stop.name;
-
-        startMarker = L.marker(coords, {
-            icon: getMarkerIcon('green')
-        }).addTo(map);
-
-    } else if (!endPoint) {
-        endPoint = stop;
-        document.getElementById('end-input').value = stop.name;
-
-        endMarker = L.marker(coords, {
-            icon: getMarkerIcon('red')
-        }).addTo(map);
-
-        drawLine(); // 👈 ici
-    }
-
-    console.log("Départ:", startPoint);
-    console.log("Arrivée:", endPoint);
-}
-// =====================
-// RESET
-// =====================
-
 function resetSelection() {
-    startPoint = null;
-    endPoint = null;
+    startStop = null;
+    endStop = null;
 
-    document.getElementById('start-input').value = '';
-    document.getElementById('end-input').value = '';
+    startInput.value = '';
+    endInput.value = '';
 
-    if (startMarker) map.removeLayer(startMarker);
-    if (endMarker) map.removeLayer(endMarker);
-    if (routeLine) map.removeLayer(routeLine);
+    if (startMarker) {
+        map.removeLayer(startMarker);
+        startMarker = null;
+    }
+
+    if (endMarker) {
+        map.removeLayer(endMarker);
+        endMarker = null;
+    }
+
+    if (routeLine) {
+        map.removeLayer(routeLine);
+        routeLine = null;
+    }
 }
 
-// =====================
-// INIT
-// =====================
+if (resetBtn) {
+    resetBtn.addEventListener('click', resetSelection);
+}
 
-loadStops();
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
