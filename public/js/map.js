@@ -1,226 +1,135 @@
-const map = L.map('map').setView([48.8566, 2.3522], 10);
+document.addEventListener("DOMContentLoaded", async () => {
+    const mapElement = document.getElementById("map");
+    if (!mapElement) return;
 
-map.setMinZoom(9);
-map.setMaxZoom(18);
+    const map = L.map("map").setView([48.8566, 2.3522], 11);
 
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap & CartoDB'
-}).addTo(map);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
 
-const startInput = document.getElementById('start-input');
-const endInput = document.getElementById('end-input');
-const resetBtn = document.getElementById('reset-btn');
+    const select = document.getElementById("lineSelect");
+    const title = document.getElementById("lineTitle");
 
-let startStop = null;
-let endStop = null;
-let startMarker = null;
-let endMarker = null;
-let routeLine = null;
+    let markers = [];
 
-const markers = L.markerClusterGroup({
-    showCoverageOnHover: false,
-    spiderfyOnMaxZoom: true,
-    maxClusterRadius: 40
-});
+    proj4.defs(
+        "EPSG:2154",
+        "+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +units=m +no_defs"
+    );
 
-fetch('/api/stops')
-    .then(response => response.json())
-    .then(stops => {
-        if (!Array.isArray(stops)) {
-            console.error('Format API invalide :', stops);
+    function getLineColor(mode) {
+        if (mode === "bus") return "#2563eb";
+        if (mode === "metro") return "#dc2626";
+        if (mode === "rer") return "#16a34a";
+        return "#6b7280";
+    }
+
+    
+
+    function clearMap() {
+        markers.forEach(marker => map.removeLayer(marker));
+        markers = [];
+    }
+
+    function getStopLatLng(stop) {
+        if (stop.lat && stop.lon) {
+            return [parseFloat(stop.lat), parseFloat(stop.lon)];
+        }
+
+        if (stop.x_epsg2154 && stop.y_epsg2154) {
+            const coords = proj4("EPSG:2154", "EPSG:4326", [
+                parseFloat(stop.x_epsg2154),
+                parseFloat(stop.y_epsg2154)
+            ]);
+
+            return [coords[1], coords[0]];
+        }
+
+        return null;
+    }
+
+    async function loadLines() {
+        try {
+            const response = await fetch("/api/lines");
+            const lines = await response.json();
+
+            select.innerHTML = '<option value="">-- Choisir une ligne --</option>';
+
+            lines.forEach(line => {
+                const option = document.createElement("option");
+                option.value = line.id;
+                option.textContent = `${line.name} (${line.transport_mode})`;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error("Erreur chargement lignes :", error);
+        }
+    }
+
+    async function loadLine(lineId) {
+        try {
+            const response = await fetch(`/api/lines/${lineId}`);
+            const data = await response.json();
+
+            clearMap();
+
+            if (!data || !data.stops || data.stops.length === 0) {
+                title.textContent = "Aucun arrêt trouvé";
+                map.setView([48.8566, 2.3522], 11);
+                return;
+            }
+
+            title.textContent = `${data.name} (${data.transport_mode})`;
+
+            const bounds = [];
+            const color = getLineColor(data.transport_mode);
+
+            data.stops.forEach(stop => {
+                const latlng = getStopLatLng(stop);
+                if (!latlng) return;
+
+                bounds.push(latlng);
+
+                const marker = L.circleMarker(latlng, {
+                    radius: 5,
+                    color: color,
+                    weight: 2,
+                    fillColor: color,
+                    fillOpacity: 0.7
+                })
+                    .addTo(map)
+                    .bindPopup(`
+                        <strong>${stop.name ?? "Arrêt sans nom"}</strong><br>
+                        Type : ${stop.stop_type ?? "inconnu"}<br>
+                        Ville : ${stop.town ?? "inconnue"}
+                    `);
+
+                markers.push(marker);
+            });
+
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [30, 30] });
+            } else {
+                map.setView([48.8566, 2.3522], 11);
+            }
+        } catch (error) {
+            console.error("Erreur chargement ligne :", error);
+        }
+    }
+
+    select.addEventListener("change", () => {
+        const lineId = select.value;
+
+        if (!lineId) {
+            clearMap();
+            title.textContent = "";
+            map.setView([48.8566, 2.3522], 11);
             return;
         }
 
-        stops.forEach(stop => {
-            if (typeof stop.lat !== 'number' || typeof stop.lng !== 'number') {
-                return;
-            }
-
-            const coords = [stop.lat, stop.lng];
-
-            const marker = L.circleMarker(coords, {
-                radius: 5,
-                color: '#2563eb',
-                fillColor: '#2563eb',
-                fillOpacity: 1,
-                weight: 1
-            });
-
-            marker.bindPopup(`
-                <strong>${escapeHtml(stop.name)}</strong><br>
-                <span>Clique pour sélectionner</span>
-            `);
-
-            marker.on('click', () => selectStop(stop, coords));
-
-            markers.addLayer(marker);
-        });
-
-        map.addLayer(markers);
-    })
-    .catch(error => {
-        console.error('Erreur chargement des arrêts :', error);
+        loadLine(lineId);
     });
 
-function selectStop(stop, coords) {
-    if (!startStop) {
-        startStop = {
-            ...stop,
-            lat: coords[0],
-            lng: coords[1]
-        };
-
-        startInput.value = stop.name;
-
-        if (startMarker) {
-            map.removeLayer(startMarker);
-        }
-
-        startMarker = L.circleMarker(coords, {
-            radius: 8,
-            color: '#16a34a',
-            fillColor: '#16a34a',
-            fillOpacity: 1,
-            weight: 2
-        }).addTo(map);
-
-        return;
-    }
-
-    if (!endStop) {
-        endStop = {
-            ...stop,
-            lat: coords[0],
-            lng: coords[1]
-        };
-
-        endInput.value = stop.name;
-
-        if (endMarker) {
-            map.removeLayer(endMarker);
-        }
-
-        endMarker = L.circleMarker(coords, {
-            radius: 8,
-            color: '#dc2626',
-            fillColor: '#dc2626',
-            fillOpacity: 1,
-            weight: 2
-        }).addTo(map);
-
-        loadRoute();
-
-        return;
-    }
-
-    resetSelection();
-
-    startStop = {
-        ...stop,
-        lat: coords[0],
-        lng: coords[1]
-    };
-
-    startInput.value = stop.name;
-
-    startMarker = L.circleMarker(coords, {
-        radius: 8,
-        color: '#16a34a',
-        fillColor: '#16a34a',
-        fillOpacity: 1,
-        weight: 2
-    }).addTo(map);
-}
-
-function loadRoute() {
-    if (!startStop || !endStop) {
-        return;
-    }
-
-    if (!startStop.id || !endStop.id) {
-        console.error('Les stations n’ont pas d’id :', startStop, endStop);
-        return;
-    }
-
-    fetch(`/api/route?from=${encodeURIComponent(startStop.id)}&to=${encodeURIComponent(endStop.id)}`)
-        .then(response => response.json())
-        .then(data => {
-            console.log('Route:', data);
-
-            if (data.error) {
-                alert(data.error);
-                return;
-            }
-
-            if (!Array.isArray(data) || data.length === 0) {
-                alert('Aucun trajet trouvé');
-                return;
-            }
-
-            drawRouteLine(data);
-        })
-        .catch(error => {
-            console.error('Erreur chargement trajet :', error);
-        });
-}
-
-function drawRouteLine(routeStops) {
-    if (routeLine) {
-        map.removeLayer(routeLine);
-    }
-
-    const latlngs = routeStops
-        .filter(stop => typeof stop.lat === 'number' && typeof stop.lng === 'number')
-        .map(stop => [stop.lat, stop.lng]);
-
-    if (latlngs.length < 2) {
-        console.error('Pas assez de points pour tracer le trajet :', routeStops);
-        return;
-    }
-
-    routeLine = L.polyline(latlngs, {
-        color: '#1d4ed8',
-        weight: 4,
-        opacity: 0.9
-    }).addTo(map);
-
-    map.fitBounds(routeLine.getBounds(), {
-        padding: [40, 40]
-    });
-}
-
-function resetSelection() {
-    startStop = null;
-    endStop = null;
-
-    startInput.value = '';
-    endInput.value = '';
-
-    if (startMarker) {
-        map.removeLayer(startMarker);
-        startMarker = null;
-    }
-
-    if (endMarker) {
-        map.removeLayer(endMarker);
-        endMarker = null;
-    }
-
-    if (routeLine) {
-        map.removeLayer(routeLine);
-        routeLine = null;
-    }
-}
-
-if (resetBtn) {
-    resetBtn.addEventListener('click', resetSelection);
-}
-
-function escapeHtml(value) {
-    return String(value)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
-}
+    loadLines();
+});

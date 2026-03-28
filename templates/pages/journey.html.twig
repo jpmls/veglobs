@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Itinéraire{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="{{ asset('css/line.css') }}">
+{% endblock %}
+
+{% block body %}
+    <h1>Itinéraire</h1>
+
+    <h2 id="lineTitle">Rechercher une gare ou un arrêt</h2>
+
+    <div class="transport-filters">
+        <button type="button" class="type-filter active" data-type="all">Tout</button>
+        <button type="button" class="type-filter" data-type="bus">Bus</button>
+        <button type="button" class="type-filter" data-type="metro">Métro</button>
+        <button type="button" class="type-filter" data-type="tram">Tram</button>
+        <button type="button" class="type-filter" data-type="rail">Rail</button>
+    </div>
+
+    <div class="line-picker">
+        <label for="stopSearch">Rechercher une gare / un arrêt</label>
+
+        <div class="search-box">
+            <input
+                type="text"
+                id="stopSearch"
+                placeholder="Ex: Châtelet, Gare de Lyon, Nation..."
+                autocomplete="off"
+            >
+            <div id="stopResults" class="line-results"></div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+    <script src="{{ asset('js/line-map.js') }}"></script>
+{% endblock %}
+

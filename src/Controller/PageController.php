@@ -13,4 +13,10 @@ final class PageController extends AbstractController
     {
         return $this->render('velib.html.twig');
     }
+
+    #[Route('/itineraires', name: 'journey_page')]
+    public function journey(): Response
+    {
+        return $this->render('pages/journey.html.twig');
+    }
 }
