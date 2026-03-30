@@ -9,33 +9,69 @@
 {% endblock %}
 
 {% block body %}
-    <h1>Itinéraire</h1>
+    <div class="journey-page">
+        <div class="journey-card">
+            <h1>Itinéraire</h1>
 
-    <h2 id="lineTitle">Rechercher une gare ou un arrêt</h2>
+            <p class="journey-subtitle">
+                Recherche visuelle des arrêts et gares du réseau.
+            </p>
 
-    <div class="transport-filters">
-        <button type="button" class="type-filter active" data-type="all">Tout</button>
-        <button type="button" class="type-filter" data-type="bus">Bus</button>
-        <button type="button" class="type-filter" data-type="metro">Métro</button>
-        <button type="button" class="type-filter" data-type="tram">Tram</button>
-        <button type="button" class="type-filter" data-type="rail">Rail</button>
-    </div>
+            <h2 id="lineTitle">Tous les arrêts</h2>
 
-    <div class="line-picker">
-        <label for="stopSearch">Rechercher une gare / un arrêt</label>
+            <div class="transport-filters">
+                <button type="button" class="type-filter active" data-type="all">Tout</button>
+                <button type="button" class="type-filter" data-type="bus">Bus</button>
+                <button type="button" class="type-filter" data-type="metro">Métro</button>
+                <button type="button" class="type-filter" data-type="tram">Tram</button>
+                <button type="button" class="type-filter" data-type="rer">RER</button>
+                <button type="button" class="type-filter" data-type="rail">Rail</button>
+            </div>
 
-        <div class="search-box">
-            <input
-                type="text"
-                id="stopSearch"
-                placeholder="Ex: Châtelet, Gare de Lyon, Nation..."
-                autocomplete="off"
-            >
-            <div id="stopResults" class="line-results"></div>
+            <div class="network-legend">
+                <span class="legend-item">
+                    <span class="legend-dot" style="background:#2563eb;"></span> Bus
+                </span>
+                <span class="legend-item">
+                    <span class="legend-dot" style="background:#003ca6;"></span> Métro
+                </span>
+                <span class="legend-item">
+                    <span class="legend-dot" style="background:#ffcd00;"></span> Tram
+                </span>
+                <span class="legend-item">
+                    <span class="legend-dot" style="background:#d1302f;"></span> RER
+                </span>
+                <span class="legend-item">
+                    <span class="legend-dot" style="background:#7c3aed;"></span> Rail
+                </span>
+            </div>
+
+            <div class="line-picker">
+                <label for="stopSearch">Rechercher une gare / un arrêt</label>
+
+                <div class="search-box">
+                    <input
+                        type="text"
+                        id="stopSearch"
+                        placeholder="Ex : Châtelet, Gare de Lyon, Nation..."
+                        autocomplete="off"
+                    >
+                    <div id="stopResults" class="line-results"></div>
+                </div>
+            </div>
+
+            <div id="stopInfo" class="stop-info-card">
+                <div class="stop-info-title">Aucun arrêt sélectionné</div>
+                <div class="stop-info-content">
+                    Clique sur un arrêt sur la carte ou choisis un résultat de recherche.
+                </div>
+            </div>
+        </div>
+
+        <div class="map-card">
+            <div id="map"></div>
         </div>
     </div>
-
-    <div id="map"></div>
 {% endblock %}
 
 {% block javascripts %}
@@ -44,4 +80,3 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="{{ asset('js/line-map.js') }}"></script>
 {% endblock %}
-

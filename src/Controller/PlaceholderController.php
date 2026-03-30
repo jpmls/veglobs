@@ -22,11 +22,11 @@ class PlaceholderController extends AbstractController
         ]);
     }
 
-    #[Route('/journey', name: 'app_journey')]
-    public function journey(): Response
-    {
-        return new Response('Page Journey à venir');
-    }
+   #[Route('/journey', name: 'app_journey')]
+public function journey(): Response
+{
+    return $this->render('pages/journey.html.twig');
+}
 
     #[Route('/transport', name: 'app_transport')]
     public function transport(): Response
