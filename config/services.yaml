@@ -1,3 +1,6 @@
+parameters:
+    idfm.api_key: '%env(IDFM_API_KEY)%'
+
 services:
     _defaults:
         autowire: true
@@ -13,3 +16,7 @@ services:
     App\Command\ImportTransportDataCommand:
         arguments:
             $projectDir: '%kernel.project_dir%'
+
+    App\Service\TrafficService:
+        arguments:
+            $apiKey: '%idfm.api_key%'

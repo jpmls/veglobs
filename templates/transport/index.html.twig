@@ -1,20 +1,45 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello TransportController!{% endblock %}
+{% block title %}Transport - VeGlobs{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+<div class="container py-5">
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    <h1 class="mb-4">Transport</h1>
+    <p class="mb-5 text-muted">
+        Accède rapidement aux informations de transport en temps réel.
+    </p>
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>C:/Users/jeanp/Downloads/mon_projet/veglobs/src/Controller/TransportController.php</code></li>
-        <li>Your template at <code>C:/Users/jeanp/Downloads/mon_projet/veglobs/templates/transport/index.html.twig</code></li>
-    </ul>
+    <div class="row g-4">
+
+        <div class="col-md-4">
+            <a href="{{ path('app_news') }}" class="card transport-card text-decoration-none">
+                <div class="card-body text-center">
+                    <h4>📰 Actualités</h4>
+                    <p>Voir les perturbations et infos transports</p>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{{ path('app_journey') }}" class="card transport-card text-decoration-none">
+                <div class="card-body text-center">
+                    <h4>🗺️ Itinéraire</h4>
+                    <p>Calculer un trajet avec la carte</p>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="#" class="card transport-card text-decoration-none">
+                <div class="card-body text-center">
+                    <h4>🚇 Lignes</h4>
+                    <p>Consulter les lignes de transport</p>
+                </div>
+            </a>
+        </div>
+
+    </div>
+
 </div>
 {% endblock %}

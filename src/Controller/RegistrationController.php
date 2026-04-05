@@ -41,7 +41,7 @@ class RegistrationController extends AbstractController
             $entityManager->persist($user);
             $entityManager->flush();
 
-            // ✅ Envoi email de confirmation (MailHog)
+
             $emailVerifier->sendEmailConfirmation('app_verify_email', $user,
                 (new TemplatedEmail())
                     ->from(new Address('no-reply@veglobs.local', 'VeGlobs'))

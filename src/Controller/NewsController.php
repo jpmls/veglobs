@@ -34,6 +34,8 @@ class NewsController extends AbstractController
             'network' => $request->query->get('network'),
             'line' => $request->query->get('line'),
             'type' => $request->query->get('type'),
+            'source' => $request->query->get('source'),
+            'q' => $request->query->get('q'),
         ];
 
         $result = $newsRepository->search($filters, $page, $limit);
@@ -63,6 +65,9 @@ class NewsController extends AbstractController
             ], 404);
         }
 
+        $news->incrementViews();
+        $newsRepository->save($news, true);
+
         return $this->json($news, 200, [], ['groups' => ['news:read', 'user:read']]);
     }
 
@@ -72,16 +77,12 @@ class NewsController extends AbstractController
         NewsRepository $newsRepository,
         ValidatorInterface $validator
     ): JsonResponse {
-        $this->denyAccessUnlessGranted('ROLE_REDACTOR');
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
         $data = $this->decodeJsonObject($request);
         if ($data instanceof JsonResponse) {
             return $data;
         }
-
-        $news = new News();
-        $this->hydrateNews($news, $data);
-        $news->setPublishedAt(new \DateTimeImmutable());
 
         $user = $this->getUser();
         if (!$user) {
@@ -90,7 +91,11 @@ class NewsController extends AbstractController
             ], 401);
         }
 
+        $news = new News();
+        $this->hydrateNews($news, $data);
+        $news->setPublishedAt(new \DateTimeImmutable());
         $news->setAuthor($user);
+        $news->setViews(0);
 
         $errors = $validator->validate($news);
         if (count($errors) > 0) {
@@ -109,7 +114,7 @@ class NewsController extends AbstractController
         NewsRepository $newsRepository,
         ValidatorInterface $validator
     ): JsonResponse {
-        $this->denyAccessUnlessGranted('ROLE_REDACTOR');
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
         $news = $newsRepository->find($id);
         if (!$news) {
@@ -205,6 +210,10 @@ class NewsController extends AbstractController
 
         if (array_key_exists('type', $data)) {
             $news->setType((string) $data['type']);
+        }
+
+        if (array_key_exists('source', $data)) {
+            $news->setSource((string) $data['source']);
         }
     }
 

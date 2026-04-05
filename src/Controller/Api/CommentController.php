@@ -128,6 +128,19 @@ class CommentController extends AbstractController
         ], Response::HTTP_CREATED);
     }
 
+    #[Route('/api/news/{id}/comment', methods: ['POST'])]
+public function addComment(int $id, Request $request): JsonResponse
+{
+    $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
+    $data = json_decode($request->getContent(), true);
+
+    // ici tu peux juste simuler pour l'instant
+    return $this->json([
+        'message' => 'Commentaire ajouté'
+    ]);
+}
+
     #[Route('/comments/{id}', name: 'api_comments_update', methods: ['PUT'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function update(

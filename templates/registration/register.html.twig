@@ -1,19 +1,126 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Register{% endblock %}
+{% block title %}Inscription - VeGlobs{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/auth.css') }}">
+{% endblock %}
 
 {% block body %}
-    <h1>Register</h1>
+<div class="auth-container">
+    <div class="auth-left">
+        <div class="auth-content">
+            <div class="auth-header">
+                <a href="{{ path('app_login') }}" class="back-btn">
+                    <i class="ri-arrow-left-line"></i>
+                </a>
+                <a href="{{ path('app_login') }}" class="register-link">Se connecter</a>
+            </div>
 
-    {{ form_errors(registrationForm) }}
+            <div class="form-content">
+                <h1 class="form-title">Inscription</h1>
+                <p class="form-subtitle">
+                    Crée ton compte VeGlobs pour suivre les infos transport et recevoir des alertes.
+                </p>
 
-    {{ form_start(registrationForm) }}
-        {{ form_row(registrationForm.email) }}
-        {{ form_row(registrationForm.plainPassword, {
-            label: 'Password'
-        }) }}
-        {{ form_row(registrationForm.agreeTerms) }}
+                {{ form_errors(registrationForm) }}
 
-        <button type="submit" class="btn">Register</button>
-    {{ form_end(registrationForm) }}
+                {{ form_start(registrationForm) }}
+
+                    <div class="form-group">
+                        {{ form_label(registrationForm.firstName) }}
+                        {{ form_widget(registrationForm.firstName, {
+                            attr: {
+                                class: 'auth-input',
+                                placeholder: 'Prénom'
+                            }
+                        }) }}
+                        {{ form_errors(registrationForm.firstName) }}
+                    </div>
+
+                    <div class="form-group">
+                        {{ form_label(registrationForm.lastName) }}
+                        {{ form_widget(registrationForm.lastName, {
+                            attr: {
+                                class: 'auth-input',
+                                placeholder: 'Nom'
+                            }
+                        }) }}
+                        {{ form_errors(registrationForm.lastName) }}
+                    </div>
+
+                    <div class="form-group">
+                        {{ form_label(registrationForm.birthDate) }}
+                        {{ form_widget(registrationForm.birthDate, {
+                            attr: {
+                                class: 'auth-input'
+                            }
+                        }) }}
+                        {{ form_errors(registrationForm.birthDate) }}
+                    </div>
+
+                    <div class="form-group">
+                        {{ form_label(registrationForm.email) }}
+                        {{ form_widget(registrationForm.email, {
+                            attr: {
+                                class: 'auth-input',
+                                placeholder: 'Adresse email'
+                            }
+                        }) }}
+                        {{ form_errors(registrationForm.email) }}
+                    </div>
+
+                    <div class="form-group">
+                        {{ form_label(registrationForm.plainPassword.first) }}
+                        {{ form_widget(registrationForm.plainPassword.first, {
+                            attr: {
+                                class: 'auth-input',
+                                placeholder: 'Mot de passe'
+                            }
+                        }) }}
+                        {{ form_errors(registrationForm.plainPassword.first) }}
+                    </div>
+
+                    <div class="form-group">
+                        {{ form_label(registrationForm.plainPassword.second) }}
+                        {{ form_widget(registrationForm.plainPassword.second, {
+                            attr: {
+                                class: 'auth-input',
+                                placeholder: 'Confirmer le mot de passe'
+                            }
+                        }) }}
+                        {{ form_errors(registrationForm.plainPassword.second) }}
+                    </div>
+
+                    <div class="checkbox-group">
+                        {{ form_row(registrationForm.agreeTerms) }}
+                    </div>
+
+                    <button class="submit-btn" type="submit">Créer un compte</button>
+
+                {{ form_end(registrationForm) }}
+
+                <span class="bottom-line"></span>
+
+                <p class="auth-footer-text">
+                    Déjà un compte ?
+                    <a href="{{ path('app_login') }}">Se connecter</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="auth-right register-bg">
+        <div class="auth-overlay"></div>
+        <div class="auth-image-text">
+            <h3>Rejoins VeGlobs</h3>
+            <p>
+                Accède à une plateforme claire et pratique pour suivre l’actualité
+                des transports publics parisiens.
+            </p>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -1,13 +1,16 @@
 <h2>Confirme ton email - VeGlobs</h2>
 
-<p>Salut {{ user.firstName }},</p>
-
-<p>Clique sur le bouton pour confirmer ton email :</p>
+<p>Bonjour {{ user.prenom ?? user.firstName ?? 'utilisateur' }},</p>
 
 <p>
-  <a href="{{ signedUrl }}" style="display:inline-block;padding:10px 14px;background:#222;color:#fff;text-decoration:none;border-radius:6px;">
-    ✅ Confirmer mon email
-  </a>
+    Merci pour ton inscription sur <strong>VeGlobs</strong>.
+    Clique sur le bouton ci-dessous pour confirmer ton adresse email.
 </p>
 
-<p>Si tu n'es pas à l'origine de cette inscription, ignore ce message.</p>
+<p>
+    <a href="{{ signedUrl }}" style="display:inline-block;padding:10px 14px;background:#0d6efd;color:#fff;text-decoration:none;border-radius:6px;">
+        Confirmer mon email
+    </a>
+</p>
+
+<p>Si tu n'es pas à l'origine de cette inscription, tu peux ignorer ce message.</p>

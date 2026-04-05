@@ -58,25 +58,37 @@ class News
     )]
     private ?string $line = null;
 
-    #[ORM\Column(length: 20)]
+    #[ORM\Column(length: 30)]
     #[Groups(['news:read'])]
     #[Assert\NotBlank(message: 'Type is required')]
     #[Assert\Choice(
-        choices: ['official', 'community'],
-        message: 'Invalid type (allowed: official, community)'
+        choices: ['perturbation', 'travaux', 'incident', 'info'],
+        message: 'Invalid type (allowed: perturbation, travaux, incident, info)'
     )]
     private ?string $type = null;
+
+    #[ORM\Column(length: 20)]
+    #[Groups(['news:read'])]
+    #[Assert\NotBlank(message: 'Source is required')]
+    #[Assert\Choice(
+        choices: ['official', 'community'],
+        message: 'Invalid source (allowed: official, community)'
+    )]
+    private ?string $source = null;
 
     #[ORM\Column(name: 'published_at', type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['news:read'])]
     private ?\DateTimeImmutable $publishedAt = null;
 
+    #[ORM\Column]
+    #[Groups(['news:read'])]
+    private int $views = 0;
+
     #[ORM\ManyToOne(inversedBy: 'news')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['news:read'])]
+    #[Groups(['news:read', 'user:read'])]
     private ?User $author = null;
 
-    // ✅ AJOUT : relation comments
     #[ORM\OneToMany(mappedBy: 'news', targetEntity: Comment::class, orphanRemoval: true)]
     #[Groups(['news:read'])]
     private Collection $comments;
@@ -84,6 +96,7 @@ class News
     public function __construct()
     {
         $this->comments = new ArrayCollection();
+        $this->views = 0;
     }
 
     public function getId(): ?int
@@ -98,7 +111,7 @@ class News
 
     public function setTitle(string $title): static
     {
-        $this->title = $title;
+        $this->title = trim($title);
         return $this;
     }
 
@@ -109,7 +122,7 @@ class News
 
     public function setContent(string $content): static
     {
-        $this->content = $content;
+        $this->content = trim($content);
         return $this;
     }
 
@@ -120,7 +133,7 @@ class News
 
     public function setNetwork(string $network): static
     {
-        $this->network = $network;
+        $this->network = trim($network);
         return $this;
     }
 
@@ -131,7 +144,7 @@ class News
 
     public function setLine(string $line): static
     {
-        $this->line = $line;
+        $this->line = trim($line);
         return $this;
     }
 
@@ -142,7 +155,18 @@ class News
 
     public function setType(string $type): static
     {
-        $this->type = $type;
+        $this->type = trim($type);
+        return $this;
+    }
+
+    public function getSource(): ?string
+    {
+        return $this->source;
+    }
+
+    public function setSource(string $source): static
+    {
+        $this->source = trim($source);
         return $this;
     }
 
@@ -154,6 +178,23 @@ class News
     public function setPublishedAt(\DateTimeImmutable $publishedAt): static
     {
         $this->publishedAt = $publishedAt;
+        return $this;
+    }
+
+    public function getViews(): int
+    {
+        return $this->views;
+    }
+
+    public function setViews(int $views): static
+    {
+        $this->views = $views;
+        return $this;
+    }
+
+    public function incrementViews(): static
+    {
+        ++$this->views;
         return $this;
     }
 

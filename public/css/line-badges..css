@@ -1,0 +1,140 @@
+/* ═══════════════════════════════════════════
+   VeGlobs — line-badges.css
+   Pastilles style RATP pour toutes les lignes
+   Métro, RER, Tram, Transilien, Bus
+═══════════════════════════════════════════ */
+ 
+/* ── Base pastille ── */
+.line-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Parisine', 'Arial Rounded MT Bold', 'Arial', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 2px solid transparent;
+  vertical-align: middle;
+}
+ 
+/* Taille par défaut : ronde */
+.line-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+ 
+/* Taille large (ex: dans un filtre) */
+.line-badge.lg {
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+ 
+/* ── RER : carré arrondi ── */
+.line-badge.rer {
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+}
+ 
+/* ── Tram : hexagone simulé ── */
+.line-badge.tram {
+  border-radius: 4px;
+  font-size: 9px;
+}
+ 
+/* ── Transilien : losange simulé ── */
+.line-badge.transilien {
+  border-radius: 4px;
+  transform: rotate(45deg);
+  font-size: 9px;
+}
+.line-badge.transilien span {
+  transform: rotate(-45deg);
+  display: inline-flex;
+}
+ 
+/* ═══════════════════════════════════════════
+   MÉTRO — couleurs officielles RATP
+═══════════════════════════════════════════ */
+.line-m1  { background: #f2c931; color: #1a1a1a; border-color: #f2c931; }
+.line-m2  { background: #003f9f; color: #ffffff; border-color: #003f9f; }
+.line-m3  { background: #9f7a11; color: #ffffff; border-color: #9f7a11; }
+.line-m3b { background: #6ec4e8; color: #1a1a1a; border-color: #6ec4e8; font-size: 8px; }
+.line-m4  { background: #cf009e; color: #ffffff; border-color: #cf009e; }
+.line-m5  { background: #ff7e2e; color: #ffffff; border-color: #ff7e2e; }
+.line-m6  { background: #6eca97; color: #1a1a1a; border-color: #6eca97; }
+.line-m7  { background: #fa9ab5; color: #1a1a1a; border-color: #fa9ab5; }
+.line-m7b { background: #6eca97; color: #1a1a1a; border-color: #6eca97; font-size: 8px; }
+.line-m8  { background: #e19bdf; color: #1a1a1a; border-color: #e19bdf; }
+.line-m9  { background: #b6bd00; color: #1a1a1a; border-color: #b6bd00; }
+.line-m10 { background: #c9910d; color: #ffffff; border-color: #c9910d; }
+.line-m11 { background: #704b1c; color: #ffffff; border-color: #704b1c; }
+.line-m12 { background: #007852; color: #ffffff; border-color: #007852; }
+.line-m13 { background: #6ec4e8; color: #1a1a1a; border-color: #6ec4e8; }
+.line-m14 { background: #62259d; color: #ffffff; border-color: #62259d; }
+ 
+/* ═══════════════════════════════════════════
+   RER — couleurs officielles
+═══════════════════════════════════════════ */
+.line-rera { background: #f01b17; color: #ffffff; border-color: #f01b17; }
+.line-rerb { background: #4b92db; color: #ffffff; border-color: #4b92db; }
+.line-rerc { background: #f3a31b; color: #1a1a1a; border-color: #f3a31b; }
+.line-rerd { background: #00a550; color: #ffffff; border-color: #00a550; }
+.line-rere { background: #be1e2d; color: #ffffff; border-color: #be1e2d; }
+ 
+/* ═══════════════════════════════════════════
+   TRAMWAY — couleurs officielles RATP/IDFM
+═══════════════════════════════════════════ */
+.line-t1  { background: #0089cb; color: #ffffff; border-color: #0089cb; }
+.line-t2  { background: #c04191; color: #ffffff; border-color: #c04191; }
+.line-t3a { background: #ee7623; color: #ffffff; border-color: #ee7623; font-size: 8px; }
+.line-t3b { background: #73bd44; color: #ffffff; border-color: #73bd44; font-size: 8px; }
+.line-t4  { background: #d5992d; color: #ffffff; border-color: #d5992d; }
+.line-t5  { background: #7d4f9e; color: #ffffff; border-color: #7d4f9e; }
+.line-t6  { background: #e2231a; color: #ffffff; border-color: #e2231a; }
+.line-t7  { background: #00a79d; color: #ffffff; border-color: #00a79d; }
+.line-t8  { background: #d50057; color: #ffffff; border-color: #d50057; }
+.line-t9  { background: #005baa; color: #ffffff; border-color: #005baa; }
+.line-t10 { background: #f9a01b; color: #1a1a1a; border-color: #f9a01b; }
+.line-t11 { background: #00b8a9; color: #ffffff; border-color: #00b8a9; }
+.line-t12 { background: #7ab51d; color: #ffffff; border-color: #7ab51d; }
+.line-t13 { background: #f57f29; color: #ffffff; border-color: #f57f29; }
+ 
+/* ═══════════════════════════════════════════
+   TRANSILIEN
+═══════════════════════════════════════════ */
+.line-h  { background: #7db0d5; color: #1a1a1a; border-color: #7db0d5; }
+.line-j  { background: #ceba00; color: #1a1a1a; border-color: #ceba00; }
+.line-k  { background: #9f5206; color: #ffffff; border-color: #9f5206; }
+.line-l  { background: #7e56a1; color: #ffffff; border-color: #7e56a1; }
+.line-n  { background: #00814c; color: #ffffff; border-color: #00814c; }
+.line-p  { background: #e05206; color: #ffffff; border-color: #e05206; }
+.line-r  { background: #e4b600; color: #1a1a1a; border-color: #e4b600; }
+.line-u  { background: #c2a900; color: #1a1a1a; border-color: #c2a900; }
+ 
+/* ═══════════════════════════════════════════
+   BUS — générique
+═══════════════════════════════════════════ */
+.line-bus {
+  background: #82be00;
+  color: #ffffff;
+  border-color: #82be00;
+  border-radius: 4px;
+  font-size: 9px;
+  width: auto;
+  min-width: 22px;
+  padding: 0 4px;
+}
+ 
+/* ── Fallback ligne inconnue ── */
+.line-unknown {
+  background: #e5e7eb;
+  color: #6b7280;
+  border-color: #d1d5db;
+  font-size: 9px;
+}

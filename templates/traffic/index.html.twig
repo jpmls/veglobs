@@ -1,0 +1,34 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Trafic{% endblock %}
+
+{% block body %}
+    <div class="container mt-4">
+        <h1 class="mb-4">État du trafic</h1>
+
+        {% if items is empty %}
+            <p>Aucune perturbation trouvée.</p>
+        {% else %}
+            <div class="row">
+                {% for item in items %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title mb-0">{{ item.title }}</h5>
+                                    <span class="badge bg-dark">{{ item.type }}</span>
+                                </div>
+
+                                {% if item.line %}
+                                    <p class="text-muted mb-2">Ligne {{ item.line }}</p>
+                                {% endif %}
+
+                                <p class="card-text">{{ item.content }}</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

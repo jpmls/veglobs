@@ -26,25 +26,24 @@ class PlaceholderController extends AbstractController
 public function journey(): Response
 {
     return $this->render('pages/journey.html.twig');
-}
-
+    }
     #[Route('/transport', name: 'app_transport')]
     public function transport(): Response
     {
-        return new Response('Page Transport à venir');
+        return $this->render('transport/index.html.twig');
     }
-
-    #[Route('/velib', name: 'app_velib')]
+        #[Route('/velib', name: 'app_velib')]
     public function velib(): Response
     {
         return $this->render('velib/index.html.twig');
     }
-
     #[Route('/login', name: 'app_login')]
+    
     public function login(): Response
     {
-        return new Response('Page Login à venir');
+        return $this->render('security/login.html.twig');
     }
+
 
     #[Route('/register', name: 'app_register')]
     public function register(): Response

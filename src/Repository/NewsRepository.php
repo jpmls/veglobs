@@ -31,42 +31,54 @@ class NewsRepository extends ServiceEntityRepository
         }
     }
 
-    public function search(array $filters, int $page, int $limit): array
+    /**
+     * @param array<string, mixed> $filters
+     * @return array{items: array<int, News>, total: int}
+     */
+    public function search(array $filters, int $page = 1, int $limit = 20): array
     {
         $qb = $this->createQueryBuilder('n')
-            ->leftJoin('n.author', 'a')
-            ->addSelect('a');
+            ->orderBy('n.publishedAt', 'DESC');
 
         if (!empty($filters['network'])) {
             $qb->andWhere('n.network = :network')
-               ->setParameter('network', $filters['network']);
+                ->setParameter('network', $filters['network']);
         }
 
         if (!empty($filters['line'])) {
             $qb->andWhere('n.line = :line')
-               ->setParameter('line', $filters['line']);
+                ->setParameter('line', $filters['line']);
         }
 
         if (!empty($filters['type'])) {
             $qb->andWhere('n.type = :type')
-               ->setParameter('type', $filters['type']);
+                ->setParameter('type', $filters['type']);
         }
 
-        $qb->orderBy('n.publishedAt', 'DESC');
+        if (!empty($filters['source'])) {
+            $qb->andWhere('n.source = :source')
+                ->setParameter('source', $filters['source']);
+        }
 
-        // Total avant pagination
+        if (!empty($filters['q'])) {
+            $qb->andWhere('n.title LIKE :q OR n.content LIKE :q')
+                ->setParameter('q', '%' . $filters['q'] . '%');
+        }
+
         $countQb = clone $qb;
         $total = (int) $countQb
             ->select('COUNT(n.id)')
             ->getQuery()
             ->getSingleScalarResult();
 
-        // Pagination
-        $qb->setFirstResult(($page - 1) * $limit)
-           ->setMaxResults($limit);
+        $items = $qb
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
 
         return [
-            'items' => $qb->getQuery()->getResult(),
+            'items' => $items,
             'total' => $total,
         ];
     }
