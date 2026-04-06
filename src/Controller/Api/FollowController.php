@@ -1,160 +1,133 @@
 <?php
 
 namespace App\Controller\Api;
-
-use App\Entity\Follow;
-use App\Entity\Notification;
-use App\Repository\FollowRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[Route('/api')]
+#[Route('/api/follow')]
 class FollowController extends AbstractController
 {
-    #[Route('/me/follows', name: 'api_me_follows_list', methods: ['GET'])]
-    #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function list(Request $request, FollowRepository $repo): JsonResponse
+    /**
+     * GET /api/follow — liste des lignes suivies par l'utilisateur
+     */
+    #[Route('', name: 'api_follow_list', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function list(Connection $db): JsonResponse
     {
-        /** @var \App\Entity\User $user */
-        $user = $this->getUser();
+        $userId = $this->getUser()->getId();
 
-        $page = max(1, (int) $request->query->get('page', 1));
-        $limit = min(max(1, (int) $request->query->get('limit', 10)), 50);
+        $follows = $db->fetchAllAssociative(
+            "SELECT id, network, line, created_at FROM follow WHERE user_id = ? ORDER BY created_at DESC",
+            [$userId]
+        );
 
-        // pagination simple (sans méthode custom)
-        $offset = ($page - 1) * $limit;
-
-        $items = $repo->createQueryBuilder('f')
-            ->andWhere('f.user = :user')
-            ->setParameter('user', $user)
-            ->orderBy('f.createdAt', 'DESC')
-            ->setFirstResult($offset)
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
-
-        $total = (int) $repo->createQueryBuilder('f')
-            ->select('COUNT(f.id)')
-            ->andWhere('f.user = :user')
-            ->setParameter('user', $user)
-            ->getQuery()
-            ->getSingleScalarResult();
-
-        return $this->json([
-            'data' => $items,
-            'meta' => [
-                'page' => $page,
-                'limit' => $limit,
-                'total' => $total,
-            ],
-        ], Response::HTTP_OK, [], ['groups' => ['follow:read']]);
+        return $this->json($follows);
     }
 
-    #[Route('/me/follows', name: 'api_me_follows_create', methods: ['POST'])]
-    #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function create(
-        Request $request,
-        FollowRepository $repo,
-        EntityManagerInterface $em,
-        ValidatorInterface $validator
-    ): JsonResponse {
-        /** @var \App\Entity\User $user */
-        $user = $this->getUser();
+    /**
+     * POST /api/follow — suivre une ligne
+     * Body: { "network": "metro", "line": "4" }
+     */
+    #[Route('', name: 'api_follow_add', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    public function add(Request $request, Connection $db): JsonResponse
+    {
+        $data    = json_decode($request->getContent(), true);
+        $network = trim($data['network'] ?? '');
+        $line    = trim($data['line'] ?? '');
+        $userId  = $this->getUser()->getId();
 
-        // ✅ bloquer si pas vérifié
-        if (!$user->isVerified()) {
-            return $this->json([
-                'errors' => [[
-                    'message' => 'Account not verified. Please verify your email before following lines.'
-                ]],
-            ], Response::HTTP_FORBIDDEN);
+        if (!$network) {
+            return $this->json(['error' => 'network requis'], 400);
         }
 
-        $payload = json_decode($request->getContent() ?: '{}', true);
-        if (!is_array($payload)) {
-            return $this->json([
-                'errors' => [['message' => 'Invalid JSON payload.']],
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        $network = trim((string) ($payload['network'] ?? ''));
-        $line = trim((string) ($payload['line'] ?? ''));
-
-        $follow = new Follow();
-        $follow->setUser($user);
-        $follow->setNetwork($network);
-        $follow->setLine($line);
-
-        // ✅ validation 422
-        $errors = $validator->validate($follow);
-        if (count($errors) > 0) {
-            $formatted = [];
-            foreach ($errors as $error) {
-                $formatted[] = [
-                    'field' => $error->getPropertyPath(),
-                    'message' => $error->getMessage(),
-                ];
-            }
-            return $this->json(['errors' => $formatted], 422);
-        }
-
-        // ✅ anti doublon (check DB)
-        $existing = $repo->findOneBy([
-            'user' => $user,
-            'network' => $network,
-            'line' => $line,
-        ]);
+        // Vérifier si déjà suivi
+        $existing = $db->fetchOne(
+            "SELECT id FROM follow WHERE user_id = ? AND network = ? AND line = ?",
+            [$userId, $network, $line]
+        );
 
         if ($existing) {
-            return $this->json([
-                'errors' => [[
-                    'message' => 'Already followed.',
-                    'details' => ['network' => $network, 'line' => $line],
-                ]],
-            ], Response::HTTP_CONFLICT);
+            return $this->json(['message' => 'Déjà suivi', 'following' => true]);
         }
 
-        $em->persist($follow);
+        $db->executeStatement(
+            "INSERT INTO follow (user_id, network, line, created_at) VALUES (?, ?, ?, NOW())",
+            [$userId, $network, $line]
+        );
 
-        // ✅ notification “follow ajouté”
-        $notif = new Notification();
-        $notif->setUser($user);
-        $notif->setType('FOLLOW_ADDED');
-        $notif->setTitle('Suivi ajouté ✅');
-        $notif->setMessage(sprintf('Tu suis maintenant %s %s.', $network, $line));
-        $notif->setPayload(['network' => $network, 'line' => $line]);
-        $em->persist($notif);
-
-        $em->flush();
-
-        return $this->json([
-            'data' => $follow,
-        ], Response::HTTP_CREATED, [], ['groups' => ['follow:read']]);
+        return $this->json(['message' => 'Ligne suivie', 'following' => true], 201);
     }
 
-    #[Route('/me/follows/{id}', name: 'api_me_follows_delete', methods: ['DELETE'])]
-    #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function delete(int $id, FollowRepository $repo, EntityManagerInterface $em): JsonResponse
+    /**
+     * DELETE /api/follow — ne plus suivre une ligne
+     * Body: { "network": "metro", "line": "4" }
+     */
+    #[Route('', name: 'api_follow_remove', methods: ['DELETE'])]
+    #[IsGranted('ROLE_USER')]
+    public function remove(Request $request, Connection $db): JsonResponse
     {
-        /** @var \App\Entity\User $user */
-        $user = $this->getUser();
+        $data    = json_decode($request->getContent(), true);
+        $network = trim($data['network'] ?? '');
+        $line    = trim($data['line'] ?? '');
+        $userId  = $this->getUser()->getId();
 
-        $follow = $repo->find($id);
-        if (!$follow || $follow->getUser()?->getId() !== $user->getId()) {
-            return $this->json([
-                'errors' => [['message' => 'Follow not found.']],
-            ], Response::HTTP_NOT_FOUND);
+        $db->executeStatement(
+            "DELETE FROM follow WHERE user_id = ? AND network = ? AND line = ?",
+            [$userId, $network, $line]
+        );
+
+        return $this->json(['message' => 'Ligne retirée', 'following' => false]);
+    }
+
+    /**
+     * GET /api/follow/news — news filtrées selon les lignes suivies
+     */
+    #[Route('/news', name: 'api_follow_news', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function followedNews(Connection $db): JsonResponse
+    {
+        $userId = $this->getUser()->getId();
+
+        $follows = $db->fetchAllAssociative(
+            "SELECT network, line FROM follow WHERE user_id = ?",
+            [$userId]
+        );
+
+        if (empty($follows)) {
+            return $this->json(['data' => [], 'message' => 'Aucune ligne suivie']);
         }
 
-        $em->remove($follow);
-        $em->flush();
+        // Construire la clause WHERE pour filtrer les news
+        $conditions = [];
+        $params     = [];
 
-        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        foreach ($follows as $f) {
+            if ($f['line']) {
+                $conditions[] = "(network = ? AND line = ?)";
+                $params[]     = $f['network'];
+                $params[]     = $f['line'];
+            } else {
+                $conditions[] = "network = ?";
+                $params[]     = $f['network'];
+            }
+        }
+
+        $where = implode(' OR ', $conditions);
+
+        $news = $db->fetchAllAssociative(
+            "SELECT id, title, content, network, line, type, source, published_at, views
+             FROM news
+             WHERE ({$where})
+             ORDER BY published_at DESC
+             LIMIT 20",
+            $params
+        );
+
+        return $this->json(['data' => $news]);
     }
 }

@@ -15,16 +15,18 @@ class PlaceholderController extends AbstractController
     }
 
     #[Route('/news/{id}', name: 'app_news_show')]
-    public function newsShow(int $id): Response
-    {
-        return $this->render('news/show.html.twig', [
-            'newsId' => $id
-        ]);
-    }
-
-   #[Route('/journey', name: 'app_journey')]
-public function journey(): Response
+public function newsShow(int $id): Response
 {
+    return $this->render('news/show.html.twig', [
+        'newsId' => $id,
+        'metaTitle' => 'Actualité #' . $id . ' - VeGlobs',
+        'metaDesc'  => 'Détail de l\'actualité transport sur VeGlobs Paris.',
+    ]);
+}
+
+        #[Route('/journey', name: 'app_journey')]
+        public function journey(): Response
+        {
     return $this->render('pages/journey.html.twig');
     }
     #[Route('/transport', name: 'app_transport')]
@@ -43,6 +45,11 @@ public function journey(): Response
     {
         return $this->render('security/login.html.twig');
     }
+    #[Route('/mes-lignes', name: 'app_follow')]
+public function follow(): Response
+{
+    return $this->render('follow/index.html.twig');
+}
 
 
     #[Route('/register', name: 'app_register')]
@@ -57,9 +64,4 @@ public function journey(): Response
         return new Response('Page Profil à venir');
     }
 
-    #[Route('/admin', name: 'app_admin')]
-    public function admin(): Response
-    {
-        return new Response('Page Admin à venir');
     }
-}

@@ -33,6 +33,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (type)   params.append('type',   type);
             if (source) params.append('source', source);
 
+            /* Lire le filtre réseau depuis l'URL (boutons navbar) */
+            const networkParam = new URLSearchParams(window.location.search).get('network');
+            if (networkParam && networkParam !== 'all') params.append('network', networkParam);
+
+            // Ajouter le filtre network depuis l'URL si présent
+            const urlNetwork = new URLSearchParams(window.location.search).get('network');
+            if (urlNetwork && !params.has('network')) params.append('network', urlNetwork);
+
             const url = params.toString() ? `/api/news?${params}` : '/api/news';
             const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -172,6 +180,14 @@ document.addEventListener('DOMContentLoaded', () => {
     <span class="news-card-time">${escapeHtml(date)} · ${views} vue${views > 1 ? 's' : ''}</span>
     <div class="news-card-actions">
       <a href="/news/${item.id}" class="news-link">Voir →</a>
+      ${isAuthenticated && item.network ? `
+        <button class="follow-line-btn" data-network="${item.network}" data-line="${item.line||''}"
+          style="background:none;border:1px solid #e5e7eb;border-radius:8px;padding:3px 8px;font-size:11px;cursor:pointer;color:#6b7280;font-family:inherit;"
+          title="Suivre cette ligne">⭐</button>
+        <button class="report-btn" data-id="${item.id}" data-network="${item.network}" data-line="${item.line||''}"
+          style="background:none;border:1px solid #fecaca;border-radius:8px;padding:3px 8px;font-size:11px;cursor:pointer;color:#dc2626;font-family:inherit;"
+          title="Signaler un incident">⚠️</button>
+      ` : ''}
       ${isAdmin ? `
         <button class="news-admin-btn edit-news-btn"   data-id="${item.id}" style="height:28px;padding:0 10px;font-size:11px;">Modifier</button>
         <button class="news-admin-btn danger delete-news-btn" data-id="${item.id}" style="height:28px;padding:0 10px;font-size:11px;">Supprimer</button>
@@ -185,6 +201,121 @@ document.addEventListener('DOMContentLoaded', () => {
        ACTIONS ADMIN
     ───────────────────────────────────────── */
     function bindCardActions() {
+
+        // ── Modale signalement ──
+        // Créer la modale si elle n'existe pas
+        if (!document.getElementById('report-modal')) {
+            const modal = document.createElement('div');
+            modal.id = 'report-modal';
+            modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;';
+            modal.innerHTML = `
+                <div style="background:#fff;border-radius:16px;padding:24px;max-width:400px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.15);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <h3 style="font-size:16px;font-weight:700;color:#111827;margin:0;">⚠️ Signaler un incident</h3>
+                        <button id="close-report" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280;line-height:1;">×</button>
+                    </div>
+                    <p id="report-context" style="font-size:13px;color:#6b7280;margin:0 0 14px;"></p>
+                    <select id="report-type" style="width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;font-size:13px;font-family:inherit;margin-bottom:10px;outline:none;background:#f9fafb;">
+                        <option value="perturbation">Perturbation</option>
+                        <option value="incident">Incident</option>
+                        <option value="travaux">Travaux</option>
+                        <option value="info">Information</option>
+                    </select>
+                    <textarea id="report-content" placeholder="Décrivez l'incident observé..." style="width:100%;min-height:80px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;outline:none;margin-bottom:12px;box-sizing:border-box;"></textarea>
+                    <button id="submit-report" style="width:100%;height:40px;background:#dc2626;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Envoyer le signalement</button>
+                </div>`;
+            document.body.appendChild(modal);
+
+            document.getElementById('close-report').addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.style.display = 'none';
+            });
+
+            document.getElementById('submit-report').addEventListener('click', async () => {
+                const content = document.getElementById('report-content').value.trim();
+                const type    = document.getElementById('report-type').value;
+                const newsId  = modal.dataset.newsId;
+                const network = modal.dataset.network;
+                const line    = modal.dataset.line;
+
+                if (!content) { alert('Veuillez décrire l\'incident.'); return; }
+
+                const btn = document.getElementById('submit-report');
+                btn.textContent = 'Envoi…';
+                btn.disabled = true;
+
+                try {
+                    const res = await fetch('/api/news', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            title: 'Signalement',
+                            content,
+                            type,
+                            network,
+                            line,
+                            source: 'community'
+                        })
+                    });
+
+                    if (res.ok || res.status === 201) {
+                        modal.style.display = 'none';
+                        document.getElementById('report-content').value = '';
+                        // Feedback visuel
+                        const feedback = document.createElement('div');
+                        feedback.style.cssText = 'position:fixed;top:20px;right:20px;background:#16a34a;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.15);';
+                        feedback.textContent = '✅ Signalement envoyé !';
+                        document.body.appendChild(feedback);
+                        setTimeout(() => feedback.remove(), 3000);
+                    }
+                } catch(e) {
+                    console.error(e);
+                } finally {
+                    btn.textContent = 'Envoyer le signalement';
+                    btn.disabled = false;
+                }
+            });
+        }
+
+        // Boutons signaler
+        document.querySelectorAll('.report-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const modal = document.getElementById('report-modal');
+                modal.dataset.newsId  = btn.dataset.id;
+                modal.dataset.network = btn.dataset.network;
+                modal.dataset.line    = btn.dataset.line;
+                document.getElementById('report-context').textContent =
+                    `Réseau : ${btn.dataset.network}${btn.dataset.line ? ' · Ligne ' + btn.dataset.line : ''}`;
+                document.getElementById('report-content').value = '';
+                modal.style.display = 'flex';
+            });
+        });
+
+        // Boutons suivre ligne
+        document.querySelectorAll('.follow-line-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const network = btn.dataset.network;
+                const line    = btn.dataset.line;
+                try {
+                    const res = await fetch('/api/follow', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ network, line })
+                    });
+                    if (res.ok || res.status === 201) {
+                        btn.textContent = '✅';
+                        btn.style.borderColor = '#16a34a';
+                        btn.style.color = '#16a34a';
+                        setTimeout(() => { btn.textContent = '⭐'; btn.style.borderColor = '#e5e7eb'; btn.style.color = '#6b7280'; }, 2000);
+                    }
+                } catch(e) { console.error(e); }
+            });
+        });
+
         if (!isAdmin) return;
 
         document.querySelectorAll('.edit-news-btn').forEach(btn => {

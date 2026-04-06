@@ -107,27 +107,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         let actionBlock = '';
         if (isAdmin) {
             actionBlock = `
-                <div class="news-detail-actions">
-                    <button class="btn btn-primary" id="btn-edit">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                        Modifier
-                    </button>
-                    <button class="btn btn-danger" id="btn-delete">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;padding-top:16px;border-top:1px solid #f0f2f5;margin-top:4px;">
+                    <button id="btn-delete" style="display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 16px;border-radius:10px;font-size:13px;font-weight:600;font-family:inherit;border:1px solid #fecaca;background:#fef2f2;color:#dc2626;cursor:pointer;">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                         Supprimer
                     </button>
                 </div>
-                <div class="comment-form" style="margin-top:20px;">
-                    <p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;">Répondre en tant qu'admin</p>
-                    <textarea id="admin-response" placeholder="Votre réponse…"></textarea>
-                    <button class="btn btn-primary" id="send-response">Envoyer</button>
+                <div style="margin-top:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;">
+                    <p style="font-size:13px;font-weight:600;color:#111827;margin:0 0 10px;">Répondre en tant qu'admin</p>
+                    <textarea id="admin-response" placeholder="Votre réponse…" style="width:100%;min-height:80px;padding:10px 12px;border:1px solid #e2e5ea;border-radius:8px;font-size:13px;font-family:inherit;color:#111827;background:#fff;resize:vertical;outline:none;margin-bottom:10px;"></textarea>
+                    <button id="send-response" style="display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:10px;font-size:13px;font-weight:600;font-family:inherit;border:none;background:#0891b2;color:#fff;cursor:pointer;">Envoyer</button>
                 </div>`;
         } else if (isAuthenticated) {
             actionBlock = `
-                <div class="comment-form" style="margin-top:20px;">
-                    <p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;">Laisser un commentaire</p>
-                    <textarea id="user-comment" placeholder="Votre commentaire…"></textarea>
-                    <button class="btn btn-primary" id="send-comment">Envoyer</button>
+                <div style="margin-top:20px;padding:14px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;font-size:13px;color:#2563eb;display:flex;align-items:center;gap:8px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#2563eb" stroke-width="2"/><path d="M12 8v4M12 16h.01" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/></svg>
+                    Vous consultez cette actualité en tant qu'utilisateur connecté.
                 </div>`;
         } else {
             actionBlock = `
@@ -136,25 +131,41 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>`;
         }
 
+        /* Couleurs par type */
+        const TYPE_COLORS = {
+            perturbation: { bg:'#fef2f2', color:'#dc2626', border:'#fecaca', bar:'#dc2626' },
+            travaux:      { bg:'#fffbeb', color:'#d97706', border:'#fde68a', bar:'#d97706' },
+            incident:     { bg:'#fff7ed', color:'#ea580c', border:'#fed7aa', bar:'#ea580c' },
+            info:         { bg:'#eff6ff', color:'#2563eb', border:'#bfdbfe', bar:'#2563eb' },
+        };
+        const SOURCE_COLORS = {
+            official:  { bg:'#f3f4f6', color:'#6b7280', border:'#e5e7eb' },
+            community: { bg:'#f0fdf4', color:'#16a34a', border:'#bbf7d0' },
+        };
+        const tc = TYPE_COLORS[type]   || { bg:'#eff6ff', color:'#2563eb', border:'#bfdbfe', bar:'#2563eb' };
+        const sc = SOURCE_COLORS[source] || { bg:'#f3f4f6', color:'#6b7280', border:'#e5e7eb' };
+
         /* Rendu HTML principal */
         container.innerHTML = `
-<div class="news-card" data-type="${escapeHtml(type)}">
-    <div class="news-meta">
-        <span class="badge ${typeCls}">${escapeHtml(typeLabel)}</span>
-        <span class="badge badge-line">${escapeHtml(netLabel)}</span>
+<div style="background:#fff;border:1px solid #e2e5ea;border-radius:16px;padding:24px 28px;box-shadow:0 1px 4px rgba(0,0,0,.08);position:relative;overflow:hidden;margin-bottom:20px;">
+    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${tc.bar};border-radius:16px 16px 0 0;"></div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 16px;align-items:center;">
+        <span style="padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:${tc.bg};color:${tc.color};border:1px solid ${tc.border};">${escapeHtml(typeLabel)}</span>
+        <span style="padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;">${escapeHtml(netLabel)}</span>
         ${lineBadge}
-        <span class="badge ${sourceCls}">${escapeHtml(srcLabel)}</span>
+        <span style="padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:${sc.bg};color:${sc.color};border:1px solid ${sc.border};">${escapeHtml(srcLabel)}</span>
     </div>
 
-    <h1 class="news-detail-title">${escapeHtml(news.title || content.slice(0, 80))}</h1>
+    <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 12px;line-height:1.4;">${escapeHtml(news.title || content.slice(0, 80))}</h1>
 
-    <div class="news-detail-info">
+    <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:#9ca3af;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #f0f2f5;">
         <span>📅 ${escapeHtml(date)}</span>
         <span>👁 ${views} vue${views > 1 ? 's' : ''}</span>
         ${news.author?.firstName ? `<span>✍️ ${escapeHtml(news.author.firstName)} ${escapeHtml(news.author.lastName || '')}</span>` : ''}
     </div>
 
-    <div class="news-detail-body">${escapeHtml(content)}</div>
+    <div style="font-size:15px;color:#4b5563;line-height:1.75;margin-bottom:20px;">${escapeHtml(content)}</div>
 
     ${actionBlock}
 </div>

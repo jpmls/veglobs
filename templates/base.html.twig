@@ -7,6 +7,23 @@
 
   <title>{% block title %}VeGlobs sur Paris{% endblock %}</title>
 
+  {# ── SEO Métadonnées ── #}
+  <meta name="description" content="{% block meta_description %}VeGlobs — Plateforme d'information trafic pour les transports parisiens. Perturbations, travaux, actualités en temps réel.{% endblock %}">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="{{ app.request.uri }}">
+
+  {# Open Graph #}
+  <meta property="og:type"        content="website">
+  <meta property="og:site_name"   content="VeGlobs sur Paris">
+  <meta property="og:title"       content="{% block og_title %}VeGlobs sur Paris{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Plateforme d'information trafic parisienne.{% endblock %}">
+  <meta property="og:url"         content="{{ app.request.uri }}">
+
+  {# Twitter Card #}
+  <meta name="twitter:card"        content="summary">
+  <meta name="twitter:title"       content="{% block twitter_title %}VeGlobs sur Paris{% endblock %}">
+  <meta name="twitter:description" content="{% block twitter_description %}Perturbations et actualités transports Paris.{% endblock %}">
+
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.14.0/css/all.css" crossorigin="anonymous">
   <link href="https://cdn.lineicons.com/2.0/LineIcons.css" rel="stylesheet">
 

@@ -11,6 +11,8 @@ class JourneyController extends AbstractController
     #[Route('/planificateur', name: 'app_journey_planner')]
     public function index(): Response
     {
-        return $this->render('journey_planner/index.html.twig');
+
+    return $this->render('pages/journey.html.twig');
+
     }
 }

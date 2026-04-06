@@ -20,3 +20,10 @@ services:
     App\Service\TrafficService:
         arguments:
             $apiKey: '%idfm.api_key%'
+            
+    App\Service\PrimService:
+        autowire: true
+
+    App\Controller\JourneyApiController:
+        autowire: true
+        tags: ['controller.service_arguments']        

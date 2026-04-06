@@ -1,0 +1,349 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes lignes suivies - VeGlobs{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .follow-page {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            padding: 28px 24px 60px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .follow-header {
+            margin-bottom: 24px;
+        }
+        .follow-header h1 {
+            font-size: 24px;
+            font-weight: 800;
+            color: #111827;
+            margin: 0 0 6px;
+        }
+        .follow-header p {
+            font-size: 14px;
+            color: #6b7280;
+            margin: 0;
+        }
+
+        /* ── Sélecteur de lignes ── */
+        .follow-picker {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+        }
+
+        .follow-picker h2 {
+            font-size: 15px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0 0 14px;
+        }
+
+        .network-section { margin-bottom: 16px; }
+
+        .network-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .lines-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .line-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-family: 'Arial Rounded MT Bold', 'Arial Black', sans-serif;
+            font-weight: 900;
+            font-size: 12px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all .15s;
+            position: relative;
+        }
+        .line-btn:hover { transform: scale(1.1); }
+        .line-btn.followed { border-color: #111827; box-shadow: 0 0 0 3px rgba(17,24,39,.15); }
+        .line-btn.followed::after {
+            content: '✓';
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 14px;
+            height: 14px;
+            background: #16a34a;
+            color: #fff;
+            border-radius: 50%;
+            font-size: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ── News filtrées ── */
+        .follow-news {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+        }
+
+        .follow-news h2 {
+            font-size: 15px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0 0 16px;
+        }
+
+        .follow-news-list { display: flex; flex-direction: column; gap: 10px; }
+
+        .follow-news-card {
+            background: #f9fafb;
+            border: 1px solid #f0f2f5;
+            border-radius: 12px;
+            padding: 14px 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        .follow-news-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 3px;
+            height: 100%;
+            background: #0891b2;
+        }
+
+        .follow-news-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-perturbation { background: #fef2f2; color: #dc2626; }
+        .badge-travaux      { background: #fffbeb; color: #d97706; }
+        .badge-info         { background: #eff6ff; color: #2563eb; }
+        .badge-incident     { background: #fff7ed; color: #ea580c; }
+        .badge-network      { background: #f3f4f6; color: #374151; }
+
+        .follow-news-content {
+            font-size: 13px;
+            color: #374151;
+            line-height: 1.5;
+        }
+
+        .follow-news-date {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 6px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .empty-state .emoji { font-size: 32px; margin-bottom: 8px; }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="follow-page">
+
+    <div class="follow-header">
+        <h1>⭐ Mes lignes suivies</h1>
+        <p>Suivez vos lignes favorites pour recevoir leurs actualités en priorité.</p>
+    </div>
+
+    {% if not app.user %}
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:20px;text-align:center;">
+            <p style="color:#dc2626;font-weight:600;margin:0 0 10px;">Connectez-vous pour suivre des lignes.</p>
+            <a href="{{ path('app_login') }}" style="display:inline-flex;padding:8px 18px;background:#0891b2;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">Se connecter</a>
+        </div>
+    {% else %}
+
+    {# ── Sélecteur lignes ── #}
+    <div class="follow-picker">
+        <h2>Choisissez vos lignes</h2>
+
+        <div class="network-section">
+            <div class="network-label">Métro</div>
+            <div class="lines-grid" id="metro-lines">
+                {% set metroLines = [
+                    {n:'1',c:'ffbe00',t:'1a1a1a'},{n:'2',c:'003ca6',t:'fff'},{n:'3',c:'837902',t:'fff'},
+                    {n:'3b',c:'6ec4e8',t:'1a1a1a'},{n:'4',c:'be418d',t:'fff'},{n:'5',c:'ff7e2e',t:'fff'},
+                    {n:'6',c:'6eca97',t:'1a1a1a'},{n:'7',c:'fa9aba',t:'1a1a1a'},{n:'7b',c:'6eca97',t:'1a1a1a'},
+                    {n:'8',c:'e19bdf',t:'1a1a1a'},{n:'9',c:'b6bd00',t:'1a1a1a'},{n:'10',c:'c9910d',t:'fff'},
+                    {n:'11',c:'704b1c',t:'fff'},{n:'12',c:'007852',t:'fff'},{n:'13',c:'6ec4e8',t:'1a1a1a'},
+                    {n:'14',c:'62259d',t:'fff'}
+                ] %}
+                {% for line in metroLines %}
+                    <button class="line-btn" data-network="metro" data-line="{{ line.n }}"
+                        style="background:#{{ line.c }};color:#{{ line.t }};"
+                        title="Métro {{ line.n }}">{{ line.n }}</button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="network-section">
+            <div class="network-label">RER</div>
+            <div class="lines-grid">
+                {% set rerLines = [
+                    {n:'A',c:'d1302f',t:'fff'},{n:'B',c:'427dbd',t:'fff'},{n:'C',c:'fcd946',t:'1a1a1a'},
+                    {n:'D',c:'5e9620',t:'fff'},{n:'E',c:'bd76a1',t:'fff'}
+                ] %}
+                {% for line in rerLines %}
+                    <button class="line-btn" style="border-radius:8px;" data-network="rer" data-line="{{ line.n }}"
+                        style="background:#{{ line.c }};color:#{{ line.t }};"
+                        title="RER {{ line.n }}">{{ line.n }}</button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="network-section">
+            <div class="network-label">Tram</div>
+            <div class="lines-grid">
+                {% set tramLines = ['T1','T2','T3a','T3b','T4','T5','T6','T7','T8','T9','T10','T11','T12','T13'] %}
+                {% for line in tramLines %}
+                    <button class="line-btn" style="border-radius:8px;width:auto;padding:0 8px;font-size:10px;background:#f59e0b;color:#1a1a1a;"
+                        data-network="tram" data-line="{{ line }}"
+                        title="Tram {{ line }}">{{ line }}</button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="network-section">
+            <div class="network-label">Bus / Transilien</div>
+            <div class="lines-grid" id="other-lines">
+                <button class="line-btn" style="width:auto;padding:0 12px;border-radius:8px;background:#2563eb;color:#fff;font-size:12px;"
+                    data-network="bus" data-line="">Tous les bus</button>
+                <button class="line-btn" style="width:auto;padding:0 12px;border-radius:8px;background:#7c3aed;color:#fff;font-size:12px;"
+                    data-network="rail" data-line="">Transilien</button>
+            </div>
+        </div>
+    </div>
+
+    {# ── News filtrées ── #}
+    <div class="follow-news">
+        <h2>📰 Actualités de vos lignes</h2>
+        <div id="follow-news-list" class="follow-news-list">
+            <div class="empty-state">
+                <div class="emoji">⭐</div>
+                <p>Suivez des lignes pour voir leurs actualités ici.</p>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+    (function() {
+        if (!document.querySelector('.follow-picker')) return;
+
+        const TYPE_COLORS = {
+            perturbation: 'badge-perturbation',
+            travaux: 'badge-travaux',
+            info: 'badge-info',
+            incident: 'badge-incident'
+        };
+
+        // Charger les lignes suivies
+        async function loadFollowed() {
+            try {
+                const res  = await fetch('/api/follow');
+                const data = await res.json();
+                data.forEach(f => {
+                    const btn = document.querySelector(`.line-btn[data-network="${f.network}"][data-line="${f.line}"]`);
+                    if (btn) btn.classList.add('followed');
+                });
+                loadNews();
+            } catch(e) { console.error(e); }
+        }
+
+        // Toggle follow
+        document.querySelectorAll('.line-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const network  = btn.dataset.network;
+                const line     = btn.dataset.line;
+                const followed = btn.classList.contains('followed');
+
+                try {
+                    await fetch('/api/follow', {
+                        method:  followed ? 'DELETE' : 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body:    JSON.stringify({ network, line })
+                    });
+                    btn.classList.toggle('followed');
+                    loadNews();
+                } catch(e) { console.error(e); }
+            });
+        });
+
+        // Charger les news filtrées
+        async function loadNews() {
+            const list = document.getElementById('follow-news-list');
+            list.innerHTML = '<div style="text-align:center;padding:20px;color:#6b7280;">Chargement…</div>';
+
+            try {
+                const res  = await fetch('/api/follow/news');
+                const data = await res.json();
+
+                if (!data.data?.length) {
+                    list.innerHTML = '<div class="empty-state"><div class="emoji">⭐</div><p>Suivez des lignes pour voir leurs actualités ici.</p></div>';
+                    return;
+                }
+
+                list.innerHTML = data.data.map(news => {
+                    const date = new Date(news.published_at).toLocaleDateString('fr-FR', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+                    const typeCls = TYPE_COLORS[news.type] || 'badge-network';
+                    return `
+                        <div class="follow-news-card">
+                            <div class="follow-news-meta">
+                                <span class="badge ${typeCls}">${news.type}</span>
+                                <span class="badge badge-network">${news.network}${news.line ? ' · ' + news.line : ''}</span>
+                            </div>
+                            <div class="follow-news-content">${news.content?.slice(0,150) || ''}${news.content?.length > 150 ? '…' : ''}</div>
+                            <div class="follow-news-date">📅 ${date}</div>
+                        </div>`;
+                }).join('');
+
+            } catch(e) {
+                list.innerHTML = '<div class="empty-state"><p>Erreur lors du chargement.</p></div>';
+            }
+        }
+
+        loadFollowed();
+    })();
+    </script>
+{% endblock %}

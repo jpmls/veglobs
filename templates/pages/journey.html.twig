@@ -1,82 +1,160 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Itinéraire{% endblock %}
+{% block title %}Itinéraire - VeGlobs{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
     <link rel="stylesheet" href="{{ asset('css/line.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/journey-extra.css') }}">
+    <style>
+        /* Override style.css */
+        .journey-page {
+            display: grid !important;
+            grid-template-columns: 400px 1fr !important;
+            gap: 20px !important;
+            max-width: 1400px !important;
+            width: 100% !important;
+            margin: 24px auto !important;
+            padding: 0 20px 24px !important;
+            align-items: start !important;
+            box-sizing: border-box !important;
+        }
+        .journey-card {
+            background: #fff !important;
+            border-radius: 20px !important;
+            padding: 24px !important;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.07) !important;
+            border: 1px solid #f0f2f5 !important;
+            position: sticky !important;
+            top: 24px !important;
+            max-height: calc(100vh - 48px) !important;
+            overflow-y: auto !important;
+        }
+        .map-card {
+            border-radius: 20px !important;
+            overflow: hidden !important;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.07) !important;
+            border: 1px solid #f0f2f5 !important;
+            position: sticky !important;
+            top: 24px !important;
+        }
+        #map {
+            width: 100% !important;
+            height: calc(100vh - 72px) !important;
+            min-height: 600px !important;
+            display: block !important;
+        }
+        .leaflet-popup { display: none !important; }
+    </style>
 {% endblock %}
 
 {% block body %}
-    <div class="journey-page">
-        <div class="journey-card">
-            <h1>Itinéraire</h1>
+<div class="journey-page">
 
-            <p class="journey-subtitle">
-                Recherche visuelle des arrêts et gares du réseau.
-            </p>
+    {# ══ PANNEAU GAUCHE ══ #}
+    <div class="journey-card">
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.5px;color:#111827;margin:0 0 6px;">Itinéraire</h1>
+        <p class="journey-subtitle">Calculez votre trajet en transports en commun.</p>
 
-            <h2 id="lineTitle">Tous les arrêts</h2>
-
-            <div class="transport-filters">
-                <button type="button" class="type-filter active" data-type="all">Tout</button>
-                <button type="button" class="type-filter" data-type="bus">Bus</button>
-                <button type="button" class="type-filter" data-type="metro">Métro</button>
-                <button type="button" class="type-filter" data-type="tram">Tram</button>
-                <button type="button" class="type-filter" data-type="rer">RER</button>
-                <button type="button" class="type-filter" data-type="rail">Rail</button>
-            </div>
-
-            <div class="network-legend">
-                <span class="legend-item">
-                    <span class="legend-dot" style="background:#2563eb;"></span> Bus
-                </span>
-                <span class="legend-item">
-                    <span class="legend-dot" style="background:#003ca6;"></span> Métro
-                </span>
-                <span class="legend-item">
-                    <span class="legend-dot" style="background:#ffcd00;"></span> Tram
-                </span>
-                <span class="legend-item">
-                    <span class="legend-dot" style="background:#d1302f;"></span> RER
-                </span>
-                <span class="legend-item">
-                    <span class="legend-dot" style="background:#7c3aed;"></span> Rail
-                </span>
-            </div>
-
-            <div class="line-picker">
-                <label for="stopSearch">Rechercher une gare / un arrêt</label>
-
+        {# ── Formulaire ── #}
+        <div class="journey-form">
+            <div class="journey-input-group">
+                <label>
+                    <span class="journey-dot journey-dot--from"></span>
+                    Départ
+                </label>
                 <div class="search-box">
-                    <input
-                        type="text"
-                        id="stopSearch"
-                        placeholder="Ex : Châtelet, Gare de Lyon, Nation..."
-                        autocomplete="off"
-                    >
-                    <div id="stopResults" class="line-results"></div>
+                    <input type="text" id="fromInput" placeholder="Ex : Châtelet, Gare de Lyon..." autocomplete="off">
+                    <div id="fromResults" class="line-results"></div>
                 </div>
+                <input type="hidden" id="fromId">
             </div>
 
-            <div id="stopInfo" class="stop-info-card">
-                <div class="stop-info-title">Aucun arrêt sélectionné</div>
-                <div class="stop-info-content">
-                    Clique sur un arrêt sur la carte ou choisis un résultat de recherche.
+            <div class="journey-swap">
+                <button id="swapBtn" type="button" title="Inverser">⇅</button>
+            </div>
+
+            <div class="journey-input-group">
+                <label>
+                    <span class="journey-dot journey-dot--to"></span>
+                    Arrivée
+                </label>
+                <div class="search-box">
+                    <input type="text" id="toInput" placeholder="Ex : Nation, La Défense..." autocomplete="off">
+                    <div id="toResults" class="line-results"></div>
                 </div>
+                <input type="hidden" id="toId">
+            </div>
+
+            <button id="computeBtn" class="journey-compute-btn" type="button">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                    <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Calculer l'itinéraire
+            </button>
+        </div>
+
+        {# ── Résultats ── #}
+        <div id="journeyResults" class="journey-results" style="display:none;"></div>
+
+        <div style="height:1px;background:#f0f2f5;margin:16px 0;"></div>
+
+        {# ── Filtres transport ── #}
+        <p style="font-size:13px;font-weight:700;color:#374151;margin:0 0 10px;">Afficher les arrêts sur la carte</p>
+
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+            <button type="button" class="type-filter" data-type="metro" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid #e5e7eb;background:#fff;font-size:12px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">
+                <span style="width:12px;height:12px;border-radius:50%;background:#003ca6;flex-shrink:0;display:inline-block;"></span>Métro
+            </button>
+            <button type="button" class="type-filter" data-type="rer" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid #e5e7eb;background:#fff;font-size:12px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">
+                <span style="width:12px;height:12px;border-radius:3px;background:#d1302f;flex-shrink:0;display:inline-block;"></span>RER
+            </button>
+            <button type="button" class="type-filter" data-type="tram" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid #e5e7eb;background:#fff;font-size:12px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">
+                <span style="width:12px;height:12px;border-radius:3px;background:#f59e0b;flex-shrink:0;display:inline-block;"></span>Tram
+            </button>
+            <button type="button" class="type-filter" data-type="bus" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid #e5e7eb;background:#fff;font-size:12px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">
+                <span style="width:12px;height:12px;border-radius:50%;background:#2563eb;flex-shrink:0;display:inline-block;"></span>Bus
+            </button>
+            <button type="button" class="type-filter" data-type="rail" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid #e5e7eb;background:#fff;font-size:12px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">
+                <span style="width:12px;height:12px;border-radius:50%;background:#7c3aed;flex-shrink:0;display:inline-block;"></span>Rail
+            </button>
+        </div>
+
+        {# ── Recherche arrêt ── #}
+        <div style="margin-bottom:12px;">
+            <label for="stopSearch" style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Rechercher un arrêt</label>
+            <div class="search-box">
+                <input type="text" id="stopSearch" placeholder="Ex : Châtelet, Nation..." autocomplete="off">
+                <div id="stopResults" class="line-results"></div>
             </div>
         </div>
 
-        <div class="map-card">
-            <div id="map"></div>
+        <div id="stopInfo" class="stop-info-card">
+            <div class="stop-info-title">Aucun arrêt sélectionné</div>
+            <div class="stop-info-content">Clique sur un filtre ou recherche un arrêt.</div>
         </div>
+
+        {# Élément caché pour line-map.js #}
+        <h2 id="lineTitle" style="display:none;"></h2>
     </div>
+
+    {# ══ CARTE ══ #}
+    <div class="map-card">
+        <div id="map"></div>
+    </div>
+
+</div>
 {% endblock %}
 
 {% block javascripts %}
     {{ parent() }}
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="{{ asset('js/line-map.js') }}"></script>
+    <script src="{{ asset('js/journey-planner.js') }}"></script>
 {% endblock %}

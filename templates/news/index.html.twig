@@ -1,6 +1,9 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}Actualités Transport - VeGlobs{% endblock %}
+{% block meta_description %}Toutes les actualités transport parisien en temps réel — perturbations Métro, RER, Bus, Tram sur VeGlobs Paris.{% endblock %}
+{% block og_title %}Actualités Transport Paris - VeGlobs{% endblock %}
+{% block og_description %}Suivez les perturbations et actualités des transports parisiens en temps réel sur VeGlobs.{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -173,22 +176,8 @@
             bus:        function(v){ return /^\d{2,3}[a-z]?$/i.test(v) && !/^\d{1,2}[b]?$/.test(v); },
             transilien: function(v){ return /^[hjklnpru]$/i.test(v); }
           };
-          /* Filtre par réseau : on stocke dans un champ caché et on recharge */
-          var networkInput=document.getElementById('networkFilter');
-          if(!networkInput){
-            networkInput=document.createElement('input');
-            networkInput.type='hidden';
-            networkInput.id='networkFilter';
-            document.querySelector('.news-page').appendChild(networkInput);
-          }
-          networkInput.value=filter;
-          networkInput.dispatchEvent(new Event('change'));
-          /* Déclenche un rechargement des news via news.js */
-          if(typeof loadNews === 'function'){ loadNews(); }
-          else {
-            /* Fallback : recharger la page avec le paramètre */
-            window.location.href='/news?network='+filter;
-          }
+          /* Recharger la page avec le paramètre network */
+          window.location.href='/news?network='+filter;
         });
       });
 
