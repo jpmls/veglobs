@@ -1,0 +1,53 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Newsletter - Admin VeGlobs{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <a href="{{ path('app_admin') }}" class="btn btn-outline-secondary btn-sm">← Retour</a>
+                <h1 class="h4 mb-0">📧 Envoyer une newsletter</h1>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="POST">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Réseau ciblé</label>
+                            <select name="network" class="form-select">
+                                <option value="">Tous les utilisateurs</option>
+                                <option value="metro">Métro</option>
+                                <option value="rer">RER</option>
+                                <option value="bus">Bus</option>
+                                <option value="tram">Tram</option>
+                            </select>
+                            <div class="form-text">Seuls les utilisateurs abonnés à ce réseau recevront l'email.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Sujet</label>
+                            <input type="text" name="subject" class="form-control"
+                                placeholder="Ex : Perturbations ce weekend sur le RER A" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Message</label>
+                            <textarea name="body" class="form-control" rows="8"
+                                placeholder="Contenu de la newsletter..." required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-send me-2"></i>Envoyer la newsletter
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

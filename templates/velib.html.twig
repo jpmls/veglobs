@@ -1,389 +1,96 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Carte Vélib - villes + Paris par arrondissement</title>
+{% extends 'base.html.twig' %}
 
+{% block title %}Carte Vélib - VeGlobs{% endblock %}
+
+{% block stylesheets %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+    <style>#map { height: 70vh; min-height: 500px; border-radius: 12px; }</style>
+{% endblock %}
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+{% block body %}
+<div class="container">
+    <h1 class="h3 mb-1"><i class="bi bi-bicycle me-2"></i>Carte Vélib</h1>
+    <p class="text-muted mb-3">Stations Vélib en temps réel. Filtrez par ville ou arrondissement.</p>
 
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f6f7fb;
-            color: #1f2937;
-        }
-
-        .page {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-
-        h1 {
-            margin: 0 0 8px 0;
-            font-size: 2rem;
-        }
-
-        .subtitle {
-            margin: 0 0 20px 0;
-            color: #6b7280;
-        }
-
-        .toolbar {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 16px;
-            padding: 14px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-        }
-
-        .card label {
-            display: block;
-            font-size: 13px;
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #374151;
-        }
-
-        .card select,
-        .card button {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 10px;
-            border: 1px solid #d1d5db;
-            font-size: 14px;
-        }
-
-        .card button {
-            background: #111827;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .stats {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 8px 12px;
-            border-radius: 999px;
-            background: white;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        #map {
-            height: 76vh;
-            min-height: 640px;
-            width: 100%;
-            border-radius: 18px;
-            overflow: hidden;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
-            background: #e5e7eb;
-        }
-
-        .leaflet-popup-content {
-            font-size: 14px;
-            line-height: 1.45;
-        }
-
-        .popup-title {
-            font-weight: bold;
-            margin-bottom: 6px;
-        }
-
-        .legend {
-            margin-top: 14px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .legend-item {
-            background: white;
-            border-radius: 999px;
-            padding: 6px 10px;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-            font-size: 13px;
-        }
-
-        .dot {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 6px;
-        }
-
-        @media (max-width: 900px) {
-            .toolbar {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-<body>
-<div class="page">
-    <h1>Carte Vélib</h1>
-    <p class="subtitle">Filtre par ville. Si tu choisis Paris, tu peux aussi filtrer par arrondissement.</p>
-
-    <div class="toolbar">
-        <div class="card">
-            <label for="cityFilter">Ville</label>
-            <select id="cityFilter">
-                <option value="ALL">Toutes les villes</option>
+    <div class="row g-2 mb-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label small fw-semibold">Ville</label>
+            <select id="cityFilter" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small fw-semibold">Arrondissement (Paris)</label>
+            <select id="arrFilter" class="form-select form-select-sm" disabled>
+                <option value="ALL">Tous</option>
+                {% for i in 1..20 %}<option value="{{ i }}">{{ i }}e</option>{% endfor %}
             </select>
         </div>
-
-        <div class="card">
-            <label for="arrFilter">Arrondissement</label>
-            <select id="arrFilter" disabled>
-                <option value="ALL">Tous les arrondissements</option>
-                {% for i in 1..20 %}
-                    <option value="{{ i }}">{{ i }}e</option>
-                {% endfor %}
-            </select>
+        <div class="col-md-2">
+            <button id="resetBtn" class="btn btn-outline-dark btn-sm w-100">Réinitialiser</button>
         </div>
-
-        <div class="card">
-            <label>Action</label>
-            <button id="resetBtn" type="button">Réinitialiser</button>
-        </div>
-
-        <div class="card">
-            <label>Vue actuelle</label>
-            <div id="currentView">Toutes les villes</div>
+        <div class="col-md-4 d-flex gap-2 flex-wrap">
+            <span class="badge bg-secondary" id="stationCount">0 stations</span>
+            <span class="badge bg-success" id="bikeCount">0 vélos</span>
+            <span class="badge bg-primary" id="dockCount">0 places</span>
         </div>
     </div>
 
-    <div class="stats">
-        <div class="badge" id="stationCount">Stations affichées : 0</div>
-        <div class="badge" id="bikeCount">Vélos disponibles : 0</div>
-        <div class="badge" id="dockCount">Places disponibles : 0</div>
-    </div>
+    <div id="map" class="shadow-sm mb-3"></div>
 
-    <div id="map"></div>
-
-    <div class="legend">
-        <div class="legend-item"><span class="dot" style="background:#ef4444;"></span>0 vélo</div>
-        <div class="legend-item"><span class="dot" style="background:#f59e0b;"></span>1 à 3 vélos</div>
-        <div class="legend-item"><span class="dot" style="background:#22c55e;"></span>4 vélos ou plus</div>
+    <div class="d-flex gap-3 small">
+        <span><span style="color:#ef4444">●</span> 0 vélo</span>
+        <span><span style="color:#f59e0b">●</span> 1-3 vélos</span>
+        <span><span style="color:#22c55e">●</span> 4+ vélos</span>
     </div>
 </div>
+{% endblock %}
 
+{% block javascripts %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-
 <script>
-    const map = L.map('map').setView([48.8566, 2.3522], 11);
+const map = L.map('map').setView([48.8566, 2.3522], 11);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'© OpenStreetMap'}).addTo(map);
 
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+const cityFilter = document.getElementById('cityFilter');
+const arrFilter  = document.getElementById('arrFilter');
+let allStations  = [], cluster = L.markerClusterGroup();
+map.addLayer(cluster);
 
-    const cityFilter = document.getElementById('cityFilter');
-    const arrFilter = document.getElementById('arrFilter');
-    const resetBtn = document.getElementById('resetBtn');
-    const currentView = document.getElementById('currentView');
-    const stationCount = document.getElementById('stationCount');
-    const bikeCount = document.getElementById('bikeCount');
-    const dockCount = document.getElementById('dockCount');
+function color(n) { return !n ? '#ef4444' : n <= 3 ? '#f59e0b' : '#22c55e'; }
 
-    let allStations = [];
-    let clusterLayer = L.markerClusterGroup();
-
-    map.addLayer(clusterLayer);
-
-    function getMarkerColor(availableBikes) {
-        if (availableBikes === null || availableBikes === undefined) return '#6b7280';
-        if (availableBikes === 0) return '#ef4444';
-        if (availableBikes <= 3) return '#f59e0b';
-        return '#22c55e';
-    }
-
-    function normalizeCity(city) {
-        return (city || '').trim();
-    }
-
-    function fillCityFilter(stations) {
-        const cities = [...new Set(
-            stations
-                .map(station => normalizeCity(station.city))
-                .filter(city => city !== '')
-        )].sort((a, b) => a.localeCompare(b, 'fr'));
-
-        cityFilter.innerHTML = '<option value="ALL">Toutes les villes</option>';
-
-        cities.forEach(city => {
-            const option = document.createElement('option');
-            option.value = city;
-            option.textContent = city;
-            cityFilter.appendChild(option);
-        });
-    }
-
-    function getFilteredStations() {
-        const selectedCity = cityFilter.value;
-        const selectedArr = arrFilter.value;
-
-        return allStations.filter(station => {
-            const cityOk = selectedCity === 'ALL' || normalizeCity(station.city) === selectedCity;
-
-            if (!cityOk) {
-                return false;
-            }
-
-            if (selectedCity === 'Paris' && selectedArr !== 'ALL') {
-                return Number(station.arrondissement) === Number(selectedArr);
-            }
-
-            return true;
-        });
-    }
-
-    function updateCurrentView() {
-        const selectedCity = cityFilter.value;
-        const selectedArr = arrFilter.value;
-
-        if (selectedCity === 'ALL') {
-            currentView.textContent = 'Toutes les villes';
-            return;
-        }
-
-        if (selectedCity === 'Paris' && selectedArr !== 'ALL') {
-            currentView.textContent = `Paris ${selectedArr}e`;
-            return;
-        }
-
-        currentView.textContent = selectedCity;
-    }
-
-    function updateStats(stations) {
-        const bikes = stations.reduce((sum, station) => sum + (station.availableBikes || 0), 0);
-        const docks = stations.reduce((sum, station) => sum + (station.availableStands || 0), 0);
-
-        stationCount.textContent = `Stations affichées : ${stations.length}`;
-        bikeCount.textContent = `Vélos disponibles : ${bikes}`;
-        dockCount.textContent = `Places disponibles : ${docks}`;
-    }
-
-    function renderStations() {
-        const stations = getFilteredStations();
-
-        clusterLayer.clearLayers();
-
-        const bounds = [];
-
-        stations.forEach(station => {
-            if (station.lat === null || station.lon === null) {
-                return;
-            }
-
-            const marker = L.circleMarker([station.lat, station.lon], {
-                radius: 7,
-                weight: 1,
-                color: '#ffffff',
-                fillColor: getMarkerColor(station.availableBikes),
-                fillOpacity: 0.95
-            });
-
-            marker.bindPopup(`
-                <div class="popup-title">${station.name ?? 'Station'}</div>
-                Ville : ${station.city ?? 'N/A'}<br>
-                ${station.city === 'Paris' && station.arrondissement ? `Arrondissement : ${station.arrondissement}e<br>` : ''}
-                Vélos disponibles : ${station.availableBikes ?? 0}<br>
-                Places disponibles : ${station.availableStands ?? 0}<br>
-                Vélos mécaniques : ${station.mechanical ?? 0}<br>
-                Vélos électriques : ${station.ebike ?? 0}
-            `);
-
-            clusterLayer.addLayer(marker);
-            bounds.push([station.lat, station.lon]);
-        });
-
-        updateCurrentView();
-        updateStats(stations);
-
-        if (bounds.length > 0) {
-            map.fitBounds(bounds, { padding: [30, 30] });
-        } else {
-            map.setView([48.8566, 2.3522], 11);
-        }
-    }
-
-    function updateArrondissementState() {
-        const selectedCity = cityFilter.value;
-        const isParis = selectedCity === 'Paris';
-
-        arrFilter.disabled = !isParis;
-
-        if (!isParis) {
-            arrFilter.value = 'ALL';
-        }
-    }
-
-    async function loadStations() {
-        const response = await fetch('/api/bikes/stations');
-
-        if (!response.ok) {
-            throw new Error(`Erreur HTTP ${response.status}`);
-        }
-
-        const result = await response.json();
-        allStations = Array.isArray(result.data) ? result.data : [];
-    }
-
-    cityFilter.addEventListener('change', () => {
-        updateArrondissementState();
-        renderStations();
+function render() {
+    const city = cityFilter.value, arr = arrFilter.value;
+    const list = allStations.filter(s => {
+        if (city !== 'ALL' && (s.city||'').trim() !== city) return false;
+        if (city === 'Paris' && arr !== 'ALL' && Number(s.arrondissement) !== Number(arr)) return false;
+        return true;
     });
-
-    arrFilter.addEventListener('change', () => {
-        renderStations();
+    cluster.clearLayers();
+    list.forEach(s => {
+        if (!s.lat || !s.lon) return;
+        L.circleMarker([s.lat, s.lon], {radius:7, color:'#fff', fillColor:color(s.availableBikes), fillOpacity:.95, weight:1})
+         .bindPopup(`<b>${s.name||'Station'}</b><br>Vélos: ${s.availableBikes||0}<br>Places: ${s.availableStands||0}`)
+         .addTo(cluster);
     });
+    document.getElementById('stationCount').textContent = list.length + ' stations';
+    document.getElementById('bikeCount').textContent    = list.reduce((a,s)=>a+(s.availableBikes||0),0) + ' vélos';
+    document.getElementById('dockCount').textContent    = list.reduce((a,s)=>a+(s.availableStands||0),0) + ' places';
+    arrFilter.disabled = city !== 'Paris';
+    if (city !== 'Paris') arrFilter.value = 'ALL';
+}
 
-    resetBtn.addEventListener('click', () => {
-        cityFilter.value = 'ALL';
-        arrFilter.value = 'ALL';
-        updateArrondissementState();
-        renderStations();
-    });
+cityFilter.addEventListener('change', render);
+arrFilter.addEventListener('change', render);
+document.getElementById('resetBtn').addEventListener('click', () => { cityFilter.value='ALL'; arrFilter.value='ALL'; render(); });
 
-    async function init() {
-        try {
-            await loadStations();
-            fillCityFilter(allStations);
-            updateArrondissementState();
-            renderStations();
-        } catch (error) {
-            console.error(error);
-            currentView.textContent = 'Erreur';
-            stationCount.textContent = error.message;
-        }
-    }
-
-    init();
+fetch('/api/bikes/stations').then(r=>r.json()).then(result => {
+    allStations = result.data || [];
+    cityFilter.innerHTML = '<option value="ALL">Toutes les villes</option>';
+    [...new Set(allStations.map(s=>(s.city||'').trim()).filter(Boolean))].sort()
+        .forEach(c => cityFilter.add(new Option(c, c)));
+    render();
+}).catch(console.error);
 </script>
-</body>
-</html>
+{% endblock %}
