@@ -8,24 +8,8 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class PlaceholderController extends AbstractController
 {
-    #[Route('/news', name: 'app_news')]
-    public function news(): Response
-    {
-        return $this->render('news/index.html.twig');
-    }
-
-    #[Route('/news/{id}', name: 'app_news_show')]
-public function newsShow(int $id): Response
-{
-    return $this->render('news/show.html.twig', [
-        'newsId' => $id,
-        'metaTitle' => 'Actualité #' . $id . ' - VeGlobs',
-        'metaDesc'  => 'Détail de l\'actualité transport sur VeGlobs Paris.',
-    ]);
-}
-
-        #[Route('/journey', name: 'app_journey')]
-        public function journey(): Response
+    #[Route('/journey', name: 'app_journey')]
+    public function journey(): Response
         {
     return $this->render('pages/journey.html.twig');
     }
