@@ -33,11 +33,7 @@ class AdminNewsController extends AbstractController
             $this->addFlash('success', 'Actualité créée !');
             return $this->redirectToRoute('app_news');
         }
-
-        return $this->render('admin/news/form.html.twig', [
-            'news' => null,
-            'title' => 'Créer une actualité',
-        ]);
+        return $this->render('admin/news/form.html.twig', ['news' => null, 'title' => 'Créer une actualité']);
     }
 
     #[Route('/{id}/edit', name: 'app_admin_news_edit', methods: ['GET', 'POST'])]
@@ -45,7 +41,6 @@ class AdminNewsController extends AbstractController
     {
         $news = $repo->find($id);
         if (!$news) throw $this->createNotFoundException();
-
         if ($request->isMethod('POST')) {
             $news->setTitle($request->request->get('title', ''));
             $news->setContent($request->request->get('content', ''));
@@ -57,22 +52,14 @@ class AdminNewsController extends AbstractController
             $this->addFlash('success', 'Actualité modifiée !');
             return $this->redirectToRoute('app_news_show', ['id' => $id]);
         }
-
-        return $this->render('admin/news/form.html.twig', [
-            'news'  => $news,
-            'title' => 'Modifier une actualité',
-        ]);
+        return $this->render('admin/news/form.html.twig', ['news' => $news, 'title' => 'Modifier une actualité']);
     }
 
     #[Route('/{id}/delete', name: 'app_admin_news_delete', methods: ['POST'])]
     public function delete(int $id, NewsRepository $repo, EntityManagerInterface $em): Response
     {
         $news = $repo->find($id);
-        if ($news) {
-            $em->remove($news);
-            $em->flush();
-            $this->addFlash('success', 'Actualité supprimée !');
-        }
+        if ($news) { $em->remove($news); $em->flush(); $this->addFlash('success', 'Supprimée !'); }
         return $this->redirectToRoute('app_news');
     }
 }
